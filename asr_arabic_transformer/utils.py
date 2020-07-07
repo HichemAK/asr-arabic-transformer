@@ -166,6 +166,6 @@ def maxpool_output_shape(h_w, kernel_size=1, stride=1):
 
     h, w = h_w
 
-    w = (w - kernel_size[1]) / stride[1] + 1
-    h = (h - kernel_size[0]) / stride[0] + 1
+    w = int((w - kernel_size[1]) / stride[1] + 1)
+    h = int((h - kernel_size[0]) / stride[0] + 1)
     return h, w
