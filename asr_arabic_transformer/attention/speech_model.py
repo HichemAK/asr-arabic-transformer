@@ -7,8 +7,8 @@ from asr_arabic_transformer.utils import conv_output_shape, maxpool_output_shape
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
-        self.cnn1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(3, 3), stride=(2, 2))
-        self.cnn2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3), stride=(2, 2))
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=(3, 3), stride=(2, 2))
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3), stride=(2, 2))
         self.max_pool = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
     def forward(self, x):
@@ -27,6 +27,7 @@ class SpeechModel(nn.Module):
         output_cnn, _ = conv_output_shape((input_size, 100), kernel_size=3, stride=2)
         output_cnn, _ = conv_output_shape((output_cnn, 100), kernel_size=3, stride=2)
         output_cnn, _ = maxpool_output_shape((output_cnn, 100), 2, 2)
+        output_cnn *= self.cnn.conv2.out_channels
 
         self.transformer = Transformer(**transformer_params)
         self.linear1 = nn.Linear(output_cnn, self.transformer.d_model)
