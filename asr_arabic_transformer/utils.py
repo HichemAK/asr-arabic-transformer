@@ -72,6 +72,10 @@ def get_id2label_dict(text_series):
 
 def load_dataset(filepath):
     df = pd.read_pickle(filepath)
+
+    # Replace 'sil' by empty sentence
+    df.text = df.text.apply(lambda x : '' if x == 'sil' else x)
+
     id2label = get_id2label_dict(df.text)
     label2id = {v: k for k, v in id2label}
     df.text = df.text.apply(lambda x: [label2id[i] for i in list(x)])
