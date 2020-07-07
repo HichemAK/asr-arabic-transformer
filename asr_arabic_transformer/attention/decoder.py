@@ -1,7 +1,7 @@
 from torch import nn
 from torch.nn import ModuleList
 
-from attention.components import MultiHeadAttention, Norm, FeedForward, PositionalEncoder
+from asr_arabic_transformer.attention.components import MultiHeadAttention, Norm, FeedForward, PositionalEncoder
 
 
 class DecoderLayer(nn.Module):

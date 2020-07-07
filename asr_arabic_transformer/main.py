@@ -1,9 +1,9 @@
 from torch import optim
 
-from attention.speech_model import SpeechModel
-from trainer import Trainer
-from utils import LabelSmoothLoss, load_dataset, get_batch
-from utils import random_split
+from asr_arabic_transformer.attention.speech_model import SpeechModel
+from asr_arabic_transformer.trainer import Trainer
+from asr_arabic_transformer.utils import LabelSmoothLoss, load_dataset, get_batch
+from asr_arabic_transformer.utils import random_split
 
 data_path = ""
 X, y, id2label = load_dataset(data_path)

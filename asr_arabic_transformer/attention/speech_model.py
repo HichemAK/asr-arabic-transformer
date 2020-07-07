@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from attention.transformer import Transformer
+from asr_arabic_transformer.attention.transformer import Transformer
 
 class SpeechModel(nn.Module):
     def __init__(self, input_size, n_classes, **transformer_params):

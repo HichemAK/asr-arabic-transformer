@@ -1,8 +1,8 @@
-from attention.decoder import Decoder
-from attention.encoder import Encoder
+from asr_arabic_transformer.attention.decoder import Decoder
+from asr_arabic_transformer.attention.encoder import Encoder
 from torch import nn
 import torch
-from utils import normalize_length
+from asr_arabic_transformer.utils import normalize_length
 
 class Transformer(nn.Module):
     def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512):

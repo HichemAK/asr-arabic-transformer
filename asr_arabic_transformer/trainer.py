@@ -1,7 +1,7 @@
 import copy
 import torch
 from os import path
-from utils import shuffle_jointly
+from asr_arabic_transformer.utils import shuffle_jointly
 
 
 class Trainer:
