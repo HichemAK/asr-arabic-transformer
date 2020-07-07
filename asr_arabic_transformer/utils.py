@@ -74,7 +74,7 @@ def load_dataset(filepath):
     df = pd.read_pickle(filepath)
 
     # Replace 'sil' by empty sentence
-    df.text = df.text.apply(lambda x : '' if x == 'sil' else x)
+    df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
     id2label = get_id2label_dict(df.text)
     label2id = {v: k for k, v in id2label}
@@ -93,6 +93,7 @@ def load_dataset(filepath):
     # Stacking
     texts = torch.stack([text for text in df.text])
     data = torch.stack([d for d in df.data])
+
     return data, texts, id2label
 
 
@@ -120,7 +121,7 @@ def add_tokens(text_series: Series, id2label):
 def padding_text(text_series: Series, label2id):
     max_length = max(len(text) for text in text_series)
     text_series = text_series.apply(lambda x: x + [label2id['<END>']] * (max_length - len(x)))
-    text_series = text_series.apply(lambda x : torch.tensor(x, dtype=torch.int))
+    text_series = text_series.apply(lambda x: torch.tensor(x, dtype=torch.int))
     return text_series
 
 
@@ -153,4 +154,18 @@ def conv_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
     h = (h_w[0] + (2 * pad[0]) - (dilation * (kernel_size[0] - 1)) - 1) // stride[0] + 1
     w = (h_w[1] + (2 * pad[1]) - (dilation * (kernel_size[1] - 1)) - 1) // stride[1] + 1
 
+    return h, w
+
+
+def maxpool_output_shape(h_w, kernel_size=1, stride=1):
+    if type(kernel_size) is not tuple:
+        kernel_size = (kernel_size, kernel_size)
+
+    if type(stride) is not tuple:
+        stride = (stride, stride)
+
+    h, w = h_w
+
+    w = (w - kernel_size[1]) / stride[1] + 1
+    h = (h - kernel_size[0]) / stride[0] + 1
     return h, w
