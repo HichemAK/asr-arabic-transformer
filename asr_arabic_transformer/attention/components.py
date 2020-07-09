@@ -20,9 +20,10 @@ class MultiHeadAttention(nn.Module):
     def forward(self, q, k, v, mask=None):
         # (bs, sl, d_model)
         bs, sl, _ = q.shape
+        sl2 = k.shape[1]
         q = self.q_linear(q).view(bs, sl, self.n_heads, self.d_k)
-        k = self.k_linear(k).view(bs, sl, self.n_heads, self.d_k)
-        v = self.v_linear(v).view(bs, sl, self.n_heads, self.d_k)
+        k = self.k_linear(k).view(bs, sl2, self.n_heads, self.d_k)
+        v = self.v_linear(v).view(bs, sl2, self.n_heads, self.d_k)
 
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)

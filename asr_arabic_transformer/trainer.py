@@ -78,12 +78,12 @@ class Trainer:
     def fit_batch(self, x, target):
         self.optimizer.zero_grad()
         out = self.model(x, target[:,:-1])
-        loss = self.loss_function(out[:,:target.size(1)-1,:], target[:,1:])
+        loss = self.loss_function(out, target[:,1:])
         loss.backward()
         self.optimizer.step()
         return loss.item()
 
     def eval_batch(self, x, target):
         out = self.model(x, target[:,:-1])
-        loss = self.loss_function(out[:,:target.size(1)-1,:], target[:,1:])
+        loss = self.loss_function(out, target[:,1:])
         return loss.item()

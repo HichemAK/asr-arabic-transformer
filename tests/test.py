@@ -29,24 +29,35 @@ def test_dataset():
     """X : a series of numbers that always begin with 0 and end with 10 with random numbers [1, 9] in between
     Y : repeat X 2 times excluding 0 and 10 values"""
     X = torch.randint(low=1, high=10, size=(3000, 20), dtype=torch.int64)
-    Y = X.clone()
-    X = torch.cat([X, X], dim=-1)
+    Y = torch.cat([X, X], dim=-1)
     X = torch.cat([torch.zeros((3000, 1), dtype=torch.int64), X, torch.ones((3000, 1), dtype=torch.int64) * 10], dim=-1)
     Y = torch.cat([torch.zeros((3000, 1), dtype=torch.int64), Y, torch.ones((3000, 1), dtype=torch.int64) * 10], dim=-1)
     return X, Y
 
 
+class CustomLoss(nn.Module):
+    def __init__(self):
+        super(CustomLoss, self).__init__()
+        self.loss = nn.CrossEntropyLoss()
+
+    def forward(self, input, target):
+        input = input.reshape(-1, input.shape[-1])
+        target = target.reshape(-1)
+        return self.loss.forward(input, target)
+
+
 X, y = test_dataset()
+print(X.shape, y.shape)
 n_classes = 11
 
-model = Model(n_classes, d_model=128, d_ff=256, Ne=2, Nd=2, n_heads=4, max_seq_len=512)
+model = Model(n_classes, d_model=64, d_ff=128, Ne=2, Nd=2, n_heads=2, max_seq_len=512)
 d_model = model.transformer.d_model
 
-loss_function = LabelSmoothLoss(0)
-optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9, lr=2e-5)
+loss_function = LabelSmoothLoss()
+optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
 
 valid_split = 0.8
 X_train, X_valid, y_train, y_valid = random_split(X, y, split=valid_split)
 
 trainer = Trainer(X_train, X_valid, y_train, y_valid, get_batch, model, optimizer, loss_function)
-trainer.train(print_every=50, batch_size=8, max_epochs=3, early_stop_epochs=20)
+trainer.train(print_every=50, batch_size=8, max_epochs=20, early_stop_epochs=20)

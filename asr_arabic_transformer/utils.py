@@ -23,16 +23,6 @@ def get_mask(seq_length, pad_length=0):
     return res
 
 
-def normalize_length(src, target):
-    max_sl = max(src.size(-2), target.size(-2))
-    target_mask = get_mask(target.size(-2), max_sl - target.size(-2))
-
-    src = torch.cat([src, torch.zeros(*src.shape[:-2], max_sl - src.size(1), src.size(2))], dim=-2)
-    target = torch.cat([target, torch.zeros(*target.shape[:-2], max_sl - target.size(1), target.size(2))], dim=-2)
-
-    return src, target, target_mask
-
-
 class LabelSmoothLoss(nn.Module):
 
     def __init__(self, smoothing=0.0):
