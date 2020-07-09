@@ -20,9 +20,10 @@ class MultiHeadAttention(nn.Module):
     def forward(self, q, k, v, mask=None):
         # (bs, sl, d_model)
         bs, sl, _ = q.shape
+        sl2 = k.shape[1]
         q = self.q_linear(q).view(bs, sl, self.n_heads, self.d_k)
-        k = self.k_linear(k).view(bs, sl, self.n_heads, self.d_k)
-        v = self.v_linear(v).view(bs, sl, self.n_heads, self.d_k)
+        k = self.k_linear(k).view(bs, sl2, self.n_heads, self.d_k)
+        v = self.v_linear(v).view(bs, sl2, self.n_heads, self.d_k)
 
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
@@ -30,8 +31,7 @@ class MultiHeadAttention(nn.Module):
 
         z = (q @ k.transpose(-2, -1)) / math.sqrt(self.d_k)
         if mask is not None:
-            mask = mask.unsqueeze(-3)
-            z = z.masked_fill(mask == 0, -1e10)
+            z = z.masked_fill(mask, -1e10)
 
         z = F.softmax(z, dim=-1) @ v
         z = self.project(z.transpose(1, 2).contiguous().view(bs, sl, -1))
@@ -70,16 +70,14 @@ class PositionalEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
         pe = torch.zeros(max_seq_len, d_model)
-        for pos in range(max_seq_len):
-            for i in range(0, d_model, 2):
-                pe[pos, i] = math.sin(pos / (10000 ** ((2 * i) / d_model)))
-                pe[pos, i + 1] = math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
-
+        position = torch.arange(0, max_seq_len, dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        x = x * math.sqrt(self.d_model)
         seq_len = x.size(1)
         p = self.pe[:, :seq_len].clone().detach()
         x = x + p

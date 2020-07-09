@@ -2,7 +2,7 @@ from asr_arabic_transformer.attention.decoder import Decoder
 from asr_arabic_transformer.attention.encoder import Encoder
 from torch import nn
 import torch
-from asr_arabic_transformer.utils import normalize_length
+from asr_arabic_transformer.utils import get_mask
 
 class Transformer(nn.Module):
     def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512):
@@ -18,7 +18,7 @@ class Transformer(nn.Module):
 
     def forward(self, src, target, src_mask=None, target_mask=None):
         encoder_out = self.encoder(src, src_mask)
-        encoder_out, target, target_mask = normalize_length(encoder_out, target)
+        target_mask = get_mask(target.size(1))
         x = self.decoder(target, encoder_out, target_mask)
         return x
 

@@ -39,7 +39,7 @@ class Trainer:
             count = 0
             self.model.train()
             for x, target in train_gen:
-                loss += self.model.fit_batch(x, target)
+                loss += self.fit_batch(x, target)
                 train_loss_history.append(loss)
                 count += 1
                 if count % print_every == 0:
@@ -50,7 +50,7 @@ class Trainer:
             count = 0
             self.model.eval()
             for x, target in valid_gen:
-                valid_loss += self.model.eval_batch(x, target)
+                valid_loss += self.eval_batch(x, target)
                 valid_loss_history += [valid_loss] * (len(valid_loss_history) - len(train_loss_history))
                 count += 1
             valid_loss /= count
@@ -78,12 +78,12 @@ class Trainer:
     def fit_batch(self, x, target):
         self.optimizer.zero_grad()
         out = self.model(x, target[:,:-1])
-        loss = self.loss_function(out[:,:target.size(1)-1,:], target[:,1:,:])
+        loss = self.loss_function(out, target[:,1:])
         loss.backward()
         self.optimizer.step()
         return loss.item()
 
     def eval_batch(self, x, target):
         out = self.model(x, target[:,:-1])
-        loss = self.loss_function(out[:,:target.size(1)-1,:], target[:,1:,:])
+        loss = self.loss_function(out, target[:,1:])
         return loss.item()
