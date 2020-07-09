@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 from pandas import Series
+import random
 
 
 def one_hot(y, num_classes):
@@ -13,19 +14,18 @@ def one_hot(y, num_classes):
     return zeros.scatter(scatter_dim, y_tensor, 1)
 
 
-def get_mask(shape, seq_length, pad_length=0):
-    res = 1 - np.triu(np.ones((*shape, seq_length, seq_length)), k=1)
-    res = torch.from_numpy(res).to(torch.float)
-    zeros = torch.zeros(*shape, seq_length, pad_length)
+def get_mask(seq_length, pad_length=0):
+    res = torch.triu(torch.ones(seq_length, seq_length)).t() == 0
+    zeros = torch.ones(seq_length, pad_length) == 1
     res = torch.cat([res, zeros], dim=-1)
-    zeros = torch.zeros(*shape, pad_length, res.shape[-1])
+    zeros = torch.ones(pad_length, res.shape[-1]) == 1
     res = torch.cat([res, zeros], dim=-2)
     return res
 
 
 def normalize_length(src, target):
     max_sl = max(src.size(-2), target.size(-2))
-    target_mask = get_mask(target.shape[:-2], target.size(-2), max_sl - target.size(-2))
+    target_mask = get_mask(target.size(-2), max_sl - target.size(-2))
 
     src = torch.cat([src, torch.zeros(*src.shape[:-2], max_sl - src.size(1), src.size(2))], dim=-2)
     target = torch.cat([target, torch.zeros(*target.shape[:-2], max_sl - target.size(1), target.size(2))], dim=-2)
@@ -57,10 +57,10 @@ def random_split(X, y, split=0.8, seed=18628):
 
 
 def shuffle_jointly(X, y, seed=1322354):
-    torch.manual_seed(seed)
-    temp = torch.cat([X, y.unsqueeze(-1).to(torch.float)], dim=-1)
-    temp = temp[torch.randperm(temp.size(0))]
-    X, y = temp[:, :, :-1], temp[:, :, -1].squeeze().to(torch.int)
+    random.seed(seed)
+    order = list(range(X.size(0)))
+    random.shuffle(order)
+    X, y = X[order], y[order]
     return X, y
 
 
@@ -101,7 +101,7 @@ def get_batch(X, y, batch_size):
     # X : (batch_size, seq_length, d) dtype : float
     # y : (batch_size, seq_length) dtype : int
     count = 0
-    while count < len(X.size(0)):
+    while count < X.size(0):
         X_batch = X[count:count + batch_size]
         y_batch = y[count:count + batch_size]
         count += batch_size
