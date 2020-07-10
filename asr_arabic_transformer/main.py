@@ -6,9 +6,10 @@ from asr_arabic_transformer.utils import LabelSmoothLoss, prepare_dataset, get_b
 from asr_arabic_transformer.utils import random_split
 
 data_path = ""
-X, y, id2label = prepare_dataset(data_path)
+X, y, id2label, mean, std = prepare_dataset(data_path, normalize=True)
 input_size = X.shape[-1]
 n_classes = len(id2label)
+print(mean, std)
 
 model = SpeechModel(input_size, n_classes, d_model=256, d_ff=1024, Ne=4, Nd=2, n_heads=4, max_seq_len=512)
 

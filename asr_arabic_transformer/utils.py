@@ -60,7 +60,7 @@ def get_id2label_dict(text_series):
     return id2label
 
 
-def prepare_dataset(df):
+def prepare_dataset(df, normalize=False):
     # Replace 'sil' by empty sentence
     df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
@@ -84,6 +84,12 @@ def prepare_dataset(df):
 
     # Transpose
     data = data.transpose(-1, -2)
+
+    if normalize:
+        mean = data.mean()
+        std = data.std()
+        data = (data - mean)/std
+        return data, texts, id2label, mean, std
 
     return data, texts, id2label
 
