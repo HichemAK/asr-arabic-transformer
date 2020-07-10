@@ -27,7 +27,7 @@ class Encoder(nn.Module):
         self.pe = PositionalEncoder(d_model, dropout, max_seq_len)
         self.encoder_layers = ModuleList([EncoderLayer(d_model, d_ff, n_heads, dropout) for _ in range(N)])
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         x = self.pe(x)
         for enc in self.encoder_layers:
             x = enc(x, mask)

@@ -3,7 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 import numpy as np
 import pandas as pd
-from pandas import Series
+from pandas import Series, DataFrame
 import random
 
 
@@ -55,7 +55,7 @@ def shuffle_jointly(X, y, seed=1322354):
 
 
 def get_id2label_dict(text_series):
-    text = sum(x for x in text_series)
+    text = ''.join(x for x in text_series)
     id2label = {k: v for k, v in enumerate(set(list(text)))}
     return id2label
 
@@ -67,15 +67,15 @@ def load_dataset(filepath):
     df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
     id2label = get_id2label_dict(df.text)
-    label2id = {v: k for k, v in id2label}
-    df.text = df.text.apply(lambda x: [label2id[i] for i in list(x)])
+    label2id = {v: k for k, v in id2label.items()}
 
+    df.text = df.text.apply(lambda x: [label2id[i] for i in list(x)])
     # Add start and end tokens
     df.text, id2label = add_tokens(df.text, id2label)
-    label2id = {v: k for k, v in id2label}
+    label2id = {v: k for k, v in id2label.items()}
 
     # Padding text
-    df.text = padding_text(df.text, label2id)
+    df = padding_text(df, label2id)
 
     # Padding data
     df.data = padding_data(df.data)
@@ -83,6 +83,9 @@ def load_dataset(filepath):
     # Stacking
     texts = torch.stack([text for text in df.text])
     data = torch.stack([d for d in df.data])
+
+    # Transpose
+    data = data.transpose(-1, -2)
 
     return data, texts, id2label
 
@@ -108,18 +111,24 @@ def add_tokens(text_series: Series, id2label):
     return text_series, id2label
 
 
-def padding_text(text_series: Series, label2id):
+def padding_text(df: DataFrame, label2id):
+    text_series = df.text
     max_length = max(len(text) for text in text_series)
+    df['padding'] = text_series.apply(lambda x: len(x))
     text_series = text_series.apply(lambda x: x + [label2id['<END>']] * (max_length - len(x)))
-    text_series = text_series.apply(lambda x: torch.tensor(x, dtype=torch.int))
-    return text_series
+    text_series = text_series.apply(lambda x: torch.tensor(x, dtype=torch.int64))
+    df.text = text_series
+    return df
 
 
 def padding_data(data_series: Series):
-    max_seq_length = max(data.shape[-2] for data in data_series)
-    data_series = data_series.apply(lambda x: torch.from_numpy(x))
+    max_seq_length = max(data.shape[-1] for data in data_series)
+    data_series = data_series.apply(lambda x: torch.from_numpy(x).to(torch.float))
+
     data_series = data_series.apply(
-        lambda x: torch.cat[x, torch.zeros((*x.shape[:-2], max_seq_length - x.shape[-2], x.shape[-1]))])
+        lambda x: torch.cat([x, torch.zeros((x.shape[-2], max_seq_length - x.shape[-1]))], dim=-1)
+    )
+
     return data_series
 
 
@@ -159,3 +168,10 @@ def maxpool_output_shape(h_w, kernel_size=1, stride=1):
     w = int((w - kernel_size[1]) / stride[1] + 1)
     h = int((h - kernel_size[0]) / stride[0] + 1)
     return h, w
+
+
+def padding_mask(mask, keys, value=1):
+    c = mask.clone()
+    for i in range(mask.shape[0]):
+        c[i, keys[i]:] = value
+    return c

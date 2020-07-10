@@ -1,11 +1,11 @@
 from torch import optim
 
 from asr_arabic_transformer.trainer import Trainer
-from asr_arabic_transformer.utils import LabelSmoothLoss, get_batch
-from asr_arabic_transformer.utils import random_split
+from asr_arabic_transformer.utils import LabelSmoothLoss, get_batch, get_mask, random_split
 import torch
 from torch import nn
 from asr_arabic_transformer.attention.transformer import Transformer
+
 
 
 class Model(nn.Module):
@@ -23,6 +23,23 @@ class Model(nn.Module):
         x = self.transformer(src, target)
         x = self.linear2(x)
         return x
+
+    def predict(self, x, sos, eos):
+        """Greedy Search implementation"""
+        x = x.unsqueeze(0)
+        x = self.embed(x)
+        x = self.transformer.encoder(x)
+        outputs = [sos, ]
+        last_output = -1
+        while last_output != eos:
+            target = torch.tensor(outputs).unsqueeze(0)
+            target = self.embed2(target)
+            target_mask = get_mask(target.shape[-2])
+            out = self.transformer.decoder(target, x, target_mask)
+            out = self.linear2(out)
+            last_output = int(torch.argmax(out, dim=-1)[0, -1])
+            outputs.append(last_output)
+        return outputs
 
 
 def test_dataset():
@@ -59,5 +76,12 @@ optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
 valid_split = 0.8
 X_train, X_valid, y_train, y_valid = random_split(X, y, split=valid_split)
 
+
+
 trainer = Trainer(X_train, X_valid, y_train, y_valid, get_batch, model, optimizer, loss_function)
-trainer.train(print_every=50, batch_size=8, max_epochs=20, early_stop_epochs=20)
+trainer.train(print_every=50, batch_size=8, max_epochs=10, early_stop_epochs=20)
+
+x = torch.randint(low=1, high=10, size=(20, ), dtype=torch.int64)
+y = model.predict(x, sos=0, eos=10)
+print(x)
+print(y)

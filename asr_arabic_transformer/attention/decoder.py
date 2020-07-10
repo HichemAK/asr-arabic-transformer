@@ -32,7 +32,7 @@ class Decoder(nn.Module):
         self.pe = PositionalEncoder(d_model, dropout, max_seq_len)
         self.decoder_layers = ModuleList([DecoderLayer(d_model, d_ff, n_heads, dropout) for _ in range(N)])
 
-    def forward(self, target, encoder_out, target_mask):
+    def forward(self, target, encoder_out, target_mask=None):
         target = self.pe(target)
         for dec in self.decoder_layers:
             x = dec(target, encoder_out, target_mask)
