@@ -2,11 +2,11 @@ from torch import optim
 
 from asr_arabic_transformer.attention.speech_model import SpeechModel
 from asr_arabic_transformer.trainer import Trainer
-from asr_arabic_transformer.utils import LabelSmoothLoss, load_dataset, get_batch
+from asr_arabic_transformer.utils import LabelSmoothLoss, prepare_dataset, get_batch
 from asr_arabic_transformer.utils import random_split
 
 data_path = ""
-X, y, id2label = load_dataset(data_path)
+X, y, id2label = prepare_dataset(data_path)
 input_size = X.shape[-1]
 n_classes = len(id2label)
 

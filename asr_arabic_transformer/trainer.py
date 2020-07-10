@@ -25,15 +25,11 @@ class Trainer:
         best_loss = float("inf")
         self.best_model = None
         epochs_without_improving = 0
-        X_train = self.X_train
-        X_valid = self.X_valid
-        y_train = self.y_train
-        y_valid = self.y_valid
 
         for i in range(max_epochs):
-            X_train, y_train = shuffle_jointly(X_train, y_train)
-            train_gen = self.get_batch(X_train, y_train, batch_size)
-            valid_gen = self.get_batch(X_valid, y_valid, batch_size)
+            self.X_train, self.y_train = shuffle_jointly(self.X_train, self.y_train)
+            train_gen = self.get_batch(self.X_train, self.y_train, batch_size)
+            valid_gen = self.get_batch(self.X_valid, self.y_valid, batch_size)
             print("Epoch", i)
             loss = 0
             count = 0

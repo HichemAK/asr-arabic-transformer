@@ -60,9 +60,7 @@ def get_id2label_dict(text_series):
     return id2label
 
 
-def load_dataset(filepath):
-    df = pd.read_pickle(filepath)
-
+def prepare_dataset(df):
     # Replace 'sil' by empty sentence
     df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
