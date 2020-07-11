@@ -214,11 +214,14 @@ def save_dataframe_into_chunks(df: pd.DataFrame, path, size_chunk=256):
     store.close()
 
 
-def get_all_infos_hdf(hdf_filepath):
+def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
     """
     Returns:
     id2label, max_length_text, max_length_data, mean, std
         """
+    if text_to_avoid is None:
+        text_to_avoid = ['sil']
+
     store = pd.HDFStore(hdf_filepath)
     label2id = {}
     max_length_text = 0
@@ -232,10 +235,11 @@ def get_all_infos_hdf(hdf_filepath):
             count += data.size
             max_length_data = max(max_length_data, data.shape[-1])
         for text in df.text:
-            max_length_text = max(max_length_text, len(text))
-            for c in text:
-                if c not in label2id:
-                    label2id[c] = len(label2id)
+            if text not in text_to_avoid:
+                max_length_text = max(max_length_text, len(text))
+                for c in text:
+                    if c not in label2id:
+                        label2id[c] = len(label2id)
 
     mean = s / count
     s = 0
