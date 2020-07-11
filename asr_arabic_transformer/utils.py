@@ -83,7 +83,7 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     df.data = padding_data(df.data, max_length_data)
 
     # Transpose
-    df.data = df.data.apply(lambda x: torch.transpose(x, -2, -1))
+    df.data = df.data.apply(lambda x: np.transpose(x, (-3, -1, -2)))
 
     to_return = {'id2label': id2label}
 
