@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from asr_arabic_transformer.attention.transformer import Transformer
 from asr_arabic_transformer.utils import conv_output_shape, maxpool_output_shape, get_mask
+import torch.nn.functional as F
 
 
 class CNN(nn.Module):
@@ -15,8 +16,8 @@ class CNN(nn.Module):
         self.max_pool = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
     def forward(self, x):
-        x = self.batch_norm1(self.conv1(x))
-        x = self.batch_norm2(self.conv2(x))
+        x = self.batch_norm1(F.relu(self.conv1(x)))
+        x = self.batch_norm2(F.relu(self.conv2(x)))
         x = self.max_pool(x)
         return x
 
