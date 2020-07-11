@@ -1,3 +1,5 @@
+import math
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -60,11 +62,12 @@ def get_id2label_dict(text_series):
     return id2label
 
 
-def prepare_dataset(df, normalize=False):
+def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_length_text=None, max_length_data=None):
     # Replace 'sil' by empty sentence
     df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
-    id2label = get_id2label_dict(df.text)
+    if id2label is None:
+        id2label = get_id2label_dict(df.text)
     label2id = {v: k for k, v in id2label.items()}
 
     df.text = df.text.apply(lambda x: [label2id[i] for i in list(x)])
@@ -73,10 +76,10 @@ def prepare_dataset(df, normalize=False):
     label2id = {v: k for k, v in id2label.items()}
 
     # Padding text
-    df = padding_text(df, label2id)
+    df = padding_text(df, label2id, max_length_text)
 
     # Padding data
-    df.data = padding_data(df.data)
+    df.data = padding_data(df.data, max_length_data)
 
     # Stacking
     texts = torch.stack([text for text in df.text])
@@ -86,9 +89,12 @@ def prepare_dataset(df, normalize=False):
     data = data.transpose(-1, -2)
 
     if normalize:
-        mean = data.mean()
-        std = data.std()
-        data = (data - mean)/std
+        if mean_std is not None:
+            mean, std = mean_std
+        else:
+            mean = data.mean()
+            std = data.std()
+        data = (data - mean) / std
         return data, texts, id2label, mean, std
 
     return data, texts, id2label
@@ -115,9 +121,10 @@ def add_tokens(text_series: Series, id2label):
     return text_series, id2label
 
 
-def padding_text(df: DataFrame, label2id):
+def padding_text(df: DataFrame, label2id, max_length=None):
     text_series = df.text
-    max_length = max(len(text) for text in text_series)
+    if max_length is None:
+        max_length = max(len(text) for text in text_series)
     df['padding'] = text_series.apply(lambda x: len(x))
     text_series = text_series.apply(lambda x: x + [label2id['<END>']] * (max_length - len(x)))
     text_series = text_series.apply(lambda x: torch.tensor(x, dtype=torch.int64))
@@ -125,8 +132,9 @@ def padding_text(df: DataFrame, label2id):
     return df
 
 
-def padding_data(data_series: Series):
-    max_seq_length = max(data.shape[-1] for data in data_series)
+def padding_data(data_series: Series, max_seq_length=None):
+    if max_seq_length is None:
+        max_seq_length = max(data.shape[-1] for data in data_series)
     data_series = data_series.apply(lambda x: torch.from_numpy(x).to(torch.float))
 
     data_series = data_series.apply(
@@ -179,3 +187,104 @@ def padding_mask(mask, keys, value=1):
     for i in range(mask.shape[0]):
         c[i, keys[i]:] = value
     return c
+
+
+def save_dataframe_into_chunks(df: pd.DataFrame, path, size_chunk=256):
+    count = 0
+    store = pd.HDFStore(path)
+    i = len(store.keys())
+    while count < len(df):
+        chunk = df.iloc[count:count + size_chunk]
+        store['chunk' + str(i)] = chunk
+        count += size_chunk
+        i += 1
+    store.close()
+
+
+def get_all_infos_hdf(hdf_filepath):
+    """
+    Returns:
+    id2label, max_length_text, max_length_data, mean, std
+        """
+    store = pd.HDFStore(hdf_filepath)
+    label2id = {}
+    max_length_text = 0
+    max_length_data = 0
+    s = 0
+    count = 0
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        for data in df.data:
+            s += np.sum(data)
+            count += data.size
+            max_length_data = max(max_length_data, data.shape[-1])
+        for text in df.text:
+            max_length_text = max(max_length_text, len(text))
+            for c in text:
+                if c not in label2id:
+                    label2id[c] = len(label2id)
+
+    mean = s / count
+    s = 0
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        for data in df.data:
+            s += np.sum((data - mean) ** 2)
+
+    std = math.sqrt(s / count)
+
+    store.close()
+    id2label = {v: k for k, v in label2id.items()}
+    return id2label, max_length_text, max_length_data, mean, std
+
+
+def mean_std(hdf_filepath):
+    """Return mean and std of data in a hdf file"""
+    s = 0
+    count = 0
+    store = pd.HDFStore(hdf_filepath)
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        for data in df.data:
+            s += np.sum(data)
+            count += data.size
+    mean = s / count
+    s = 0
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        for data in df.data:
+            s += np.sum((data - mean) ** 2)
+    std = math.sqrt(s / count)
+    store.close()
+    return mean, std
+
+
+def get_id2label_hdf(hdf_filepath):
+    """Builds an id2label dictionary from the text of a hdf file and returns also the largest length of a text
+    (used for padding)"""
+    store = pd.HDFStore(hdf_filepath)
+    label2id = {}
+    max_length_text = 0
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        for text in df.text:
+            max_length_text = max(max_length_text, len(text))
+            for c in text:
+                if c not in label2id:
+                    label2id[c] = len(label2id)
+    store.close()
+    id2label = {v: k for k, v in label2id.items()}
+    return id2label, max_length_text
+
+
+def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
+    id2label, max_length_text, max_length_data, mean, std = get_all_infos_hdf(hdf_filepath)
+    store_prepared = pd.HDFStore(hdf_prepared_filepath)
+    store = pd.HDFStore(hdf_filepath)
+    for i in range(len(store.keys())):
+        df = store['chunk' + str(i)]
+        df = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
+                             max_length_text=max_length_text, max_length_data=max_length_data)
+        store_prepared['chunk' + int(i)] = df
+    store_prepared.close()
+    store.close()
