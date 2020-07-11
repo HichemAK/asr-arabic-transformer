@@ -62,7 +62,8 @@ def get_id2label_dict(text_series):
     return id2label
 
 
-def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_length_text=None, max_length_data=None):
+def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_length_text=None, max_length_data=None,
+                    return_dataframe=False):
     # Replace 'sil' by empty sentence
     df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
@@ -81,23 +82,35 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     # Padding data
     df.data = padding_data(df.data, max_length_data)
 
-    # Stacking
-    texts = torch.stack([text for text in df.text])
-    data = torch.stack([d for d in df.data])
-
     # Transpose
-    data = data.transpose(-1, -2)
+    df.data = df.data.apply(lambda x: torch.transpose(x, -2, -1))
+
+    to_return = {'id2label' : id2label}
 
     if normalize:
         if mean_std is not None:
             mean, std = mean_std
         else:
+            data = torch.stack([d for d in df.data])
             mean = data.mean()
             std = data.std()
-        data = (data - mean) / std
-        return data, texts, id2label, mean, std
+        df.data = df.data.apply(lambda x : (x - mean)/std)
+        to_return['mean'] = mean
+        to_return['std'] = std
 
-    return data, texts, id2label
+    if not return_dataframe:
+        # Stacking
+        texts = torch.stack([text for text in df.text])
+        data = torch.stack([d for d in df.data])
+
+        to_return['data'], to_return['texts'] = data, texts
+
+    else:
+        to_return['df'] = df
+
+    return to_return
+
+
 
 
 def get_batch(X, y, batch_size):
@@ -283,8 +296,10 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
-        df = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
+        res = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
                              max_length_text=max_length_text, max_length_data=max_length_data)
+        df = res['df']
         store_prepared['chunk' + str(i)] = df
     store_prepared.close()
     store.close()
+    return id2label, mean, std
