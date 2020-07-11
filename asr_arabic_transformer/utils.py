@@ -138,7 +138,7 @@ def padding_text(df: DataFrame, label2id, max_length=None):
         max_length = max(len(text) for text in text_series)
     df['padding'] = text_series.apply(lambda x: len(x))
     text_series = text_series.apply(lambda x: x + [label2id['<END>']] * (max_length - len(x)))
-    text_series = text_series.apply(lambda x: torch.tensor(x, dtype=torch.int64))
+    text_series = text_series.apply(lambda x: np.array(x, dtype=np.int))
     df.text = text_series
     return df
 
@@ -146,10 +146,9 @@ def padding_text(df: DataFrame, label2id, max_length=None):
 def padding_data(data_series: Series, max_seq_length=None):
     if max_seq_length is None:
         max_seq_length = max(data.shape[-1] for data in data_series)
-    data_series = data_series.apply(lambda x: torch.from_numpy(x).to(torch.float))
 
     data_series = data_series.apply(
-        lambda x: torch.cat([x, torch.zeros((x.shape[-2], max_seq_length - x.shape[-1]))], dim=-1)
+        lambda x: np.concatenate([x, np.zeros((x.shape[-2], max_seq_length - x.shape[-1]))], axis=-1)
     )
 
     return data_series
