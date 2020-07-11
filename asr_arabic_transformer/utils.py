@@ -85,7 +85,7 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     # Transpose
     df.data = df.data.apply(lambda x: torch.transpose(x, -2, -1))
 
-    to_return = {'id2label' : id2label}
+    to_return = {'id2label': id2label}
 
     if normalize:
         if mean_std is not None:
@@ -94,7 +94,7 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
             data = torch.stack([d for d in df.data])
             mean = data.mean()
             std = data.std()
-        df.data = df.data.apply(lambda x : (x - mean)/std)
+        df.data = df.data.apply(lambda x: (x - mean) / std)
         to_return['mean'] = mean
         to_return['std'] = std
 
@@ -109,8 +109,6 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
         to_return['df'] = df
 
     return to_return
-
-
 
 
 def get_batch(X, y, batch_size):
@@ -297,7 +295,7 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
         res = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
-                             max_length_text=max_length_text, max_length_data=max_length_data)
+                              max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True)
         df = res['df']
         store_prepared['chunk' + str(i)] = df
     store_prepared.close()
