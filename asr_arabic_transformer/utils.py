@@ -126,8 +126,11 @@ def add_tokens(text_series: Series, id2label):
     last = len(id2label)
     start = '<START>'
     end = '<END>'
-    id2label[last] = start
-    id2label[last + 1] = end
+    if start not in id2label:
+        id2label[last] = start
+        last += 1
+    if end not in id2label:
+        id2label[last] = end
     text_series = text_series.apply(lambda x: [last] + x + [last + 1])
     return text_series, id2label
 
