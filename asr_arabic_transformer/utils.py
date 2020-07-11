@@ -285,6 +285,6 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
         df = store['chunk' + str(i)]
         df = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
                              max_length_text=max_length_text, max_length_data=max_length_data)
-        store_prepared['chunk' + int(i)] = df
+        store_prepared['chunk' + str(i)] = df
     store_prepared.close()
     store.close()
