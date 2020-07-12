@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 from pandas import Series, DataFrame
 from torch import nn
+import os
 
 
 def one_hot(y, num_classes):
@@ -310,17 +311,24 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
     return id2label, mean, std
 
 
-def train_dev_split(hdf_filepath, hdf_dev_path, train_share=0.9):
+def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9):
     store = pd.HDFStore(hdf_filepath)
     store_dev = pd.HDFStore(hdf_dev_path, 'w')
+    store_train = pd.HDFStore(hdf_train_path)
     keys = store.keys()
     random.shuffle(keys)
     split = int((1 - train_share) * len(keys))
     dev_keys = keys[:split]
+    train_keys = keys[split:]
 
-    for key in dev_keys:
-        store_dev[key] = store[key]
+    for key in keys:
+        if key in dev_keys:
+            store_dev[key] = store[key]
+        elif key in train_keys:
+            train_keys[key] = store[key]
         del store[key]
 
     store.close()
+    store_train.close()
     store_dev.close()
+    os.remove(hdf_filepath)
