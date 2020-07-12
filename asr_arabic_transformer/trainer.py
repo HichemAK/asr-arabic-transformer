@@ -5,7 +5,8 @@ from asr_arabic_transformer.utils import shuffle_jointly
 
 
 class Trainer:
-    def __init__(self, X_train, X_valid, y_train, y_valid, get_batch, model, optimizer, loss_function, seed=636248):
+    def __init__(self, X_train, X_valid, y_train, y_valid, get_batch, model, optimizer, loss_function, device=None,
+                 seed=636248):
         self.X_train = X_train
         self.X_valid = X_valid
         self.y_train = y_train
@@ -17,6 +18,12 @@ class Trainer:
         self.optimizer = optimizer
         self.loss_function = loss_function
         self.best_model = None
+        self.device = device
+        if device is None:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        self.model = self.model.to(self.device)
+
 
     def train(self, print_every, batch_size, max_epochs, early_stop_epochs, path_save="", save_name="model_save{}.pt"):
         self.num_exec += 1
@@ -72,6 +79,8 @@ class Trainer:
         print("Best Validation Loss : ", best_loss)
 
     def fit_batch(self, x, target):
+        if self.device == 'cuda':
+            x, target = x.cuda(), target.cuda()
         self.optimizer.zero_grad()
         out = self.model(x, target[:,:-1])
         loss = self.loss_function(out, target[:,1:])
@@ -80,6 +89,8 @@ class Trainer:
         return loss.item()
 
     def eval_batch(self, x, target):
+        if self.device == 'cuda':
+            x, target = x.cuda(), target.cuda()
         out = self.model(x, target[:,:-1])
         loss = self.loss_function(out, target[:,1:])
         return loss.item()

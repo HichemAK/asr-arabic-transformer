@@ -41,9 +41,9 @@ model = SpeechModel(infos['input_size'], infos['n_classes'], d_model=256, d_ff=1
                     max_seq_len=512)
 
 loss_function = LabelSmoothLoss(0.05)
-optimizer = optim.Adam(betas=(0.9, 0.98), eps=1e-9)
+optimizer = optim.Adam(model.parameters(), betas=(0.9, 0.98), eps=1e-9)
 
-train_path = 'data.h5'
+train_path = 'train.h5'
 valid_path = 'dev.h5'
 
 trainer = TrainerHDF(train_path, valid_path, get_batch, model, optimizer, loss_function)
