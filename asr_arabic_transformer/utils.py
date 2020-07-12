@@ -306,9 +306,13 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
                               max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True)
         df = res['df']
         store_prepared['chunk' + str(i)] = df
+
+    input_size = df.data.iloc[0].shape[-1]
     store_prepared.close()
     store.close()
-    return id2label, mean, std
+    infos = {'id2label' : id2label, 'max_length_text' : max_length_text, 'max_length_data' : max_length_data,
+             'mean' : mean, 'std' : std, 'input_size' : input_size}
+    return infos
 
 
 def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9):
