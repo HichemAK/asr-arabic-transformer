@@ -5,7 +5,7 @@ import torch
 from asr_arabic_transformer.utils import get_mask, padding_mask
 
 class Transformer(nn.Module):
-    def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512):
+    def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512, device=None):
         super().__init__()
         self.d_model = d_model
         self.d_ff = d_ff
@@ -15,6 +15,9 @@ class Transformer(nn.Module):
         self.dropout = dropout
         self.encoder = Encoder(d_model, d_ff, n_heads, Ne, dropout, max_seq_len)
         self.decoder = Decoder(d_model, d_ff, n_heads, Nd, dropout, max_seq_len)
+        self.device = device
+        if device is None:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     def forward(self, src, target, src_mask=None, target_mask=None, src_padding=None, target_padding=None):
         """
@@ -37,6 +40,9 @@ class Transformer(nn.Module):
         if target_padding is not None:
             if target_mask is None:
                 target_mask = torch.zeros()
+
+        if target_mask is not None and self.device == 'cuda':
+            target_mask = target_mask.cuda()
 
         x = self.decoder(target, encoder_out, target_mask)
         return x
