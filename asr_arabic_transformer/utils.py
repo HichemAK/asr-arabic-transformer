@@ -139,6 +139,8 @@ def add_tokens(text_series: Series, id2label):
 
 def padding_text(df: DataFrame, label2id, max_length=None):
     text_series = df.text
+    if max_length is not None:
+        max_length += 2
     if max_length is None:
         max_length = max(len(text) for text in text_series)
     df['padding'] = text_series.apply(lambda x: len(x))
