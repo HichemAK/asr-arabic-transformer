@@ -1,12 +1,12 @@
 import math
+import random
 
-import torch
-from torch import nn
-import torch.nn.functional as F
 import numpy as np
 import pandas as pd
+import torch
+import torch.nn.functional as F
 from pandas import Series, DataFrame
-import random
+from torch import nn
 
 
 def one_hot(y, num_classes):
@@ -202,9 +202,10 @@ def padding_mask(mask, keys, value=1):
     return c
 
 
-def save_dataframe_into_chunks(df: pd.DataFrame, path, size_chunk=256):
+def save_dataframe_into_chunks(df: pd.DataFrame, path, size_chunk=256, replace=False):
     count = 0
-    store = pd.HDFStore(path)
+    mode = 'w' if replace else None
+    store = pd.HDFStore(path, mode)
     i = len(store.keys())
     while count < len(df):
         chunk = df.iloc[count:count + size_chunk]
@@ -307,3 +308,19 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
     store_prepared.close()
     store.close()
     return id2label, mean, std
+
+
+def train_dev_split(hdf_filepath, hdf_dev_path, train_share=0.9):
+    store = pd.HDFStore(hdf_filepath)
+    store_dev = pd.HDFStore(hdf_dev_path, 'w')
+    keys = store.keys()
+    random.shuffle(keys)
+    split = int((1 - train_share) * len(keys))
+    dev_keys = keys[:split]
+
+    for key in dev_keys:
+        store_dev[key] = store[key]
+        del store[key]
+
+    store.close()
+    store_dev.close()
