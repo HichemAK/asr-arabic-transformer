@@ -39,13 +39,17 @@ class TrainerHDF:
             print("Epoch", i)
             loss = 0
             count = 0
+            accuracy = 0
             self.model.train()
             for x, target in train_gen:
-                loss += self.fit_batch(x, target)
+                tl, acc = self.fit_batch(x, target)
+                loss += tl
+                accuracy += acc
                 train_loss_history.append(loss)
                 count += 1
                 if count % print_every == 0:
-                    print("Iteration :", len(train_loss_history), "Loss :", loss / count)
+                    print("Iteration :", len(train_loss_history), "Loss :", loss / count, "   Accuracy :",
+                          accuracy / count)
 
             valid_loss = 0
             accuracy = 0
@@ -90,9 +94,10 @@ class TrainerHDF:
         self.optimizer.zero_grad()
         out = self.model(x, target[:, :-1])
         loss = self.loss_function(out, target[:, 1:])
+        accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
         loss.backward()
         self.optimizer.step()
-        return loss.item()
+        return loss.item(), accuracy
 
     def eval_batch(self, x, target):
         if self.device == 'cuda':
