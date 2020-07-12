@@ -325,7 +325,7 @@ def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9)
         if key in dev_keys:
             store_dev[key] = store[key]
         elif key in train_keys:
-            train_keys[key] = store[key]
+            store_train[key] = store[key]
         del store[key]
 
     store.close()
