@@ -299,7 +299,7 @@ def get_id2label_hdf(hdf_filepath):
 
 def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
     id2label, max_length_text, max_length_data, mean, std = get_all_infos_hdf(hdf_filepath)
-    store_prepared = pd.HDFStore(hdf_prepared_filepath)
+    store_prepared = pd.HDFStore(hdf_prepared_filepath, 'w')
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
@@ -319,7 +319,7 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
 def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9):
     store = pd.HDFStore(hdf_filepath)
     store_dev = pd.HDFStore(hdf_dev_path, 'w')
-    store_train = pd.HDFStore(hdf_train_path)
+    store_train = pd.HDFStore(hdf_train_path, 'w')
     keys = store.keys()
     random.shuffle(keys)
     split = int((1 - train_share) * len(keys))
@@ -327,11 +327,11 @@ def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9)
     train_keys = keys[split:]
 
     for key in keys:
+        chunk = store[key]
         if key in dev_keys:
-            store_dev[key] = store[key]
+            store_dev[key] = chunk
         elif key in train_keys:
-            store_train[key] = store[key]
-        del store[key]
+            store_train[key] = chunk
 
     store.close()
     store_train.close()
