@@ -312,7 +312,6 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True):
                               max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True)
         df = res['df']
         store_prepared['chunk' + str(i)] = df
-        print(df.head())
 
     input_size = df.data.iloc[0].shape[-1]
     store_prepared.close()

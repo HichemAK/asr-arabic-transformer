@@ -1,8 +1,10 @@
+import torch
+from torch import nn
+
 from asr_arabic_transformer.attention.decoder import Decoder
 from asr_arabic_transformer.attention.encoder import Encoder
-from torch import nn
-import torch
-from asr_arabic_transformer.utils import get_mask, padding_mask
+from asr_arabic_transformer.utils import get_mask
+
 
 class Transformer(nn.Module):
     def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512, device=None):
@@ -33,14 +35,17 @@ class Transformer(nn.Module):
         T : Sequence length of target
         D : d_model of transformer
         """
+
         if src_padding is not None:
             if src_mask is None:
-                src_mask = torch.zeros((src.shape[-2], src.shape[-2])) != 0
-            src_mask_padding = torch.zeros((target.shape[-3], target.shape[-2])) != 0
+                src_mask = torch.ones((src.shape[-2], src.shape[-2]), dtype=torch.bool)
+            src_mask_padding = torch.ones((src.shape[-3], src.shape[-2]), dtype=torch.bool)
             for i in range(target_padding.shape[0]):
-                src_mask_padding[i, src_padding[i]:] = True
+                src_mask_padding[i, src_padding[i]:] = False
+            src_mask = src_mask.unsqueeze(0)
+            src_mask_padding = src_mask_padding.unsqueeze(1)
             src_mask = src_mask_padding & src_mask
-
+            src_mask = ~src_mask
 
         encoder_out = self.encoder(src, src_mask)
         if target_mask == 'triu':
@@ -48,11 +53,15 @@ class Transformer(nn.Module):
 
         if target_padding is not None:
             if target_mask is None:
-                target_mask = torch.zeros((target.shape[-2], target.shape[-2])) != 0
-            target_mask_padding = torch.zeros((target.shape[-3], target.shape[-2])) != 0
+                target_mask = torch.zeros((target.shape[-2], target.shape[-2]), dtype=torch.bool)
+            target_mask_padding = torch.ones((target.shape[-3], target.shape[-2]), dtype=torch.bool)
             for i in range(target_padding.shape[0]):
-                target_mask_padding[i, target_padding[i]:] = True
+                target_mask_padding[i, target_padding[i]:] = False
+            target_mask = ~target_mask
+            target_mask = target_mask.unsqueeze(0)
+            target_mask_padding = target_mask_padding.unsqueeze(1)
             target_mask = target_mask_padding & target_mask
+            target_mask = ~target_mask
 
         if target_mask is not None and self.device == 'cuda':
             target_mask = target_mask.cuda()
@@ -63,12 +72,12 @@ class Transformer(nn.Module):
 
 if __name__ == "__main__":
     from asr_arabic_transformer.utils import LabelSmoothLoss
-    import time
+
     T = Transformer(d_model=10, d_ff=256, Ne=2, Nd=2, n_heads=2, max_seq_len=1000)
     criterion = LabelSmoothLoss(0.1)
     x = torch.rand((1, 1000, 10))
     target = torch.rand((1, 1000, 10))
-    out = T(x, target[:,:-1,:])
+    out = T(x, target[:, :-1, :])
     print(out.shape)
-    loss = criterion(out[:,:target.size(1)-1,:], target[:,1:,:].argmax(dim=-1))
+    loss = criterion(out[:, :target.size(1) - 1, :], target[:, 1:, :].argmax(dim=-1))
     print(loss.item())

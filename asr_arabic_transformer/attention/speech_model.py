@@ -49,9 +49,9 @@ class SpeechModel(nn.Module):
             src = torch.transpose(src, -1, -2)
             src = self.cnn(src)
             src = src.view(src.shape[0], -1, src.shape[-1])
+            src = torch.transpose(src, -1, -2)
             src_padding = None
 
-        src = torch.transpose(src, -1, -2)
         src = self.linear1(src)
         target = self.embed(target)
         x = self.transformer(src, target, target_mask='triu', src_padding=src_padding, target_padding=target_padding)
