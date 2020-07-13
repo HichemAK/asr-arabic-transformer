@@ -41,8 +41,8 @@ class TrainerHDF:
             count = 0
             accuracy = 0
             self.model.train()
-            for x, target in train_gen:
-                tl, acc = self.fit_batch(x, target)
+            for x, target, src_padding, target_padding in train_gen:
+                tl, acc = self.fit_batch(x, target, src_padding, target_padding)
                 loss += tl
                 accuracy += acc
                 train_loss_history.append(loss)
