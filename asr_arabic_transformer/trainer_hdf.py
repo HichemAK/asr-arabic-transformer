@@ -56,8 +56,8 @@ class TrainerHDF:
             loss /= count
             count = 0
             self.model.eval()
-            for x, target in valid_gen:
-                vl, acc = self.eval_batch(x, target)
+            for x, target, src_padding, target_padding in valid_gen:
+                vl, acc = self.eval_batch(x, target, src_padding, target_padding)
                 valid_loss += vl
                 accuracy += acc
                 valid_loss_history += [valid_loss] * (len(valid_loss_history) - len(train_loss_history))
@@ -88,21 +88,21 @@ class TrainerHDF:
         store_train.close()
         store_dev.close()
 
-    def fit_batch(self, x, target):
+    def fit_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
             x, target = x.cuda(), target.cuda()
         self.optimizer.zero_grad()
-        out = self.model(x, target[:, :-1])
+        out = self.model(x, target[:, :-1], src_padding, target_padding)
         loss = self.loss_function(out, target[:, 1:])
         accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
         loss.backward()
         self.optimizer.step()
         return loss.item(), accuracy
 
-    def eval_batch(self, x, target):
+    def eval_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
             x, target = x.cuda(), target.cuda()
-        out = self.model(x, target[:, :-1])
+        out = self.model(x, target[:, :-1], src_padding=src_padding, target_padding=target_padding)
         loss = self.loss_function(out, target[:, 1:])
         accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
         return loss.item(), accuracy

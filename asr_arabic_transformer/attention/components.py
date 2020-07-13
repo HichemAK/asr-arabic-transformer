@@ -31,6 +31,8 @@ class MultiHeadAttention(nn.Module):
 
         z = (q @ k.transpose(-2, -1)) / math.sqrt(self.d_k)
         if mask is not None:
+            if len(mask.shape) == 3:
+                mask = mask.unsqueeze(1)
             z = z.masked_fill(mask, -1e10)
 
         z = F.softmax(z, dim=-1) @ v

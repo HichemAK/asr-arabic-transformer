@@ -49,12 +49,14 @@ def random_split(X, y, split=0.8, seed=18628):
     return X_train, X_valid, y_train, y_valid
 
 
-def shuffle_jointly(X, y, seed=1322354):
+def shuffle_jointly(*list_tensors, seed=1322354):
+    list_tensors = list(list_tensors)
     random.seed(seed)
-    order = list(range(X.size(0)))
+    order = list(range(list_tensors[0].size(0)))
     random.shuffle(order)
-    X, y = X[order], y[order]
-    return X, y
+    for i in range(len(list_tensors)):
+        list_tensors[i] = list_tensors[i][order]
+    return list_tensors
 
 
 def get_id2label_dict(text_series):
@@ -81,7 +83,7 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     df = padding_text(df, label2id, max_length_text)
 
     # Padding data
-    df.data = padding_data(df.data, max_length_data)
+    df = padding_data(df, max_length_data)
 
     # Transpose
     df.data = df.data.apply(lambda x: np.transpose(x, (-1, -2)))
@@ -143,22 +145,23 @@ def padding_text(df: DataFrame, label2id, max_length=None):
         max_length += 2
     if max_length is None:
         max_length = max(len(text) for text in text_series)
-    df['padding'] = text_series.apply(lambda x: len(x))
+    df['text_padding'] = text_series.apply(lambda x: len(x))
     text_series = text_series.apply(lambda x: x + [label2id['<END>']] * (max_length - len(x)))
     text_series = text_series.apply(lambda x: np.array(x, dtype=np.int))
     df.text = text_series
     return df
 
 
-def padding_data(data_series: Series, max_seq_length=None):
+def padding_data(df: DataFrame, max_seq_length=None):
     if max_seq_length is None:
-        max_seq_length = max(data.shape[-1] for data in data_series)
+        max_seq_length = max(data.shape[-1] for data in df.data)
 
-    data_series = data_series.apply(
+    df['data_padding'] = df.data.apply(lambda x: x.shape[-1])
+    df.data = df.data.apply(
         lambda x: np.concatenate([x, np.zeros((x.shape[-2], max_seq_length - x.shape[-1]))], axis=-1)
     )
 
-    return data_series
+    return df
 
 
 def conv_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
@@ -299,16 +302,17 @@ def get_id2label_hdf(hdf_filepath):
     return id2label, max_length_text
 
 
-def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath):
+def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True):
     id2label, max_length_text, max_length_data, mean, std = get_all_infos_hdf(hdf_filepath)
     store_prepared = pd.HDFStore(hdf_prepared_filepath, 'w')
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
-        res = prepare_dataset(df, normalize=True, mean_std=(mean, std), id2label=id2label,
+        res = prepare_dataset(df, normalize=normalize, mean_std=(mean, std), id2label=id2label,
                               max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True)
         df = res['df']
         store_prepared['chunk' + str(i)] = df
+        print(df.head())
 
     input_size = df.data.iloc[0].shape[-1]
     store_prepared.close()

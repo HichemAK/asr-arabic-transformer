@@ -33,13 +33,26 @@ class Transformer(nn.Module):
         T : Sequence length of target
         D : d_model of transformer
         """
+        if src_padding is not None:
+            if src_mask is None:
+                src_mask = torch.zeros((src.shape[-2], src.shape[-2])) != 0
+            src_mask_padding = torch.zeros((target.shape[-3], target.shape[-2])) != 0
+            for i in range(target_padding.shape[0]):
+                src_mask_padding[i, src_padding[i]:] = True
+            src_mask = src_mask_padding & src_mask
+
+
         encoder_out = self.encoder(src, src_mask)
         if target_mask == 'triu':
             target_mask = get_mask(target.size(1))
 
         if target_padding is not None:
             if target_mask is None:
-                target_mask = torch.zeros()
+                target_mask = torch.zeros((target.shape[-2], target.shape[-2])) != 0
+            target_mask_padding = torch.zeros((target.shape[-3], target.shape[-2])) != 0
+            for i in range(target_padding.shape[0]):
+                target_mask_padding[i, target_padding[i]:] = True
+            target_mask = target_mask_padding & target_mask
 
         if target_mask is not None and self.device == 'cuda':
             target_mask = target_mask.cuda()

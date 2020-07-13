@@ -23,31 +23,38 @@ class CNN(nn.Module):
 
 
 class SpeechModel(nn.Module):
-    def __init__(self, input_size, n_classes, **transformer_params):
+    def __init__(self, input_size, n_classes, use_cnn=True, **transformer_params):
         super().__init__()
-        self.cnn = CNN()
+        self.cnn = None
+        if use_cnn:
+            self.cnn = CNN()
         self.n_classes = n_classes
-
-        _, output_cnn = conv_output_shape((100, input_size), kernel_size=3, stride=2)
-        _, output_cnn= conv_output_shape((100, output_cnn), kernel_size=3, stride=2)
-        _, output_cnn = maxpool_output_shape((100, output_cnn), 2, 2)
-        output_cnn *= self.cnn.conv2.out_channels
+        if use_cnn:
+            _, output_cnn = conv_output_shape((100, input_size), kernel_size=3, stride=2)
+            _, output_cnn= conv_output_shape((100, output_cnn), kernel_size=3, stride=2)
+            _, output_cnn = maxpool_output_shape((100, output_cnn), 2, 2)
+            output_cnn *= self.cnn.conv2.out_channels
+        else:
+            output_cnn = input_size
 
         self.transformer = Transformer(**transformer_params)
         self.linear1 = nn.Linear(output_cnn, self.transformer.d_model)
         self.embed = nn.Embedding(n_classes, self.transformer.d_model)
         self.linear2 = nn.Linear(self.transformer.d_model, n_classes)
+        self.use_cnn = use_cnn
 
-    def forward(self, src, target):
-        src = src.unsqueeze(-3)
-        src = torch.transpose(src, -1, -2)
-        src = self.cnn(src)
-        src = src.view(src.shape[0], -1, src.shape[-1])
+    def forward(self, src, target, src_padding, target_padding):
+        if self.use_cnn:
+            src = src.unsqueeze(-3)
+            src = torch.transpose(src, -1, -2)
+            src = self.cnn(src)
+            src = src.view(src.shape[0], -1, src.shape[-1])
+            src_padding = None
 
         src = torch.transpose(src, -1, -2)
         src = self.linear1(src)
         target = self.embed(target)
-        x = self.transformer(src, target, target_mask='triu')
+        x = self.transformer(src, target, target_mask='triu', src_padding=src_padding, target_padding=target_padding)
         x = self.linear2(x)
         return x
 
