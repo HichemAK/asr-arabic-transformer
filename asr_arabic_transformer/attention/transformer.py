@@ -47,6 +47,9 @@ class Transformer(nn.Module):
             src_mask = src_mask_padding & src_mask
             src_mask = ~src_mask
 
+        if src_mask is not None and self.device == 'cuda':
+            src_mask = src_mask.cuda()
+
         encoder_out = self.encoder(src, src_mask)
         if target_mask == 'triu':
             target_mask = get_mask(target.size(1))
@@ -65,6 +68,7 @@ class Transformer(nn.Module):
 
         if target_mask is not None and self.device == 'cuda':
             target_mask = target_mask.cuda()
+
 
         x = self.decoder(target, encoder_out, target_mask)
         return x
