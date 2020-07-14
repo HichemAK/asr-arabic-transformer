@@ -68,11 +68,11 @@ def get_id2label_dict(text_series):
 def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_length_text=None, max_length_data=None,
                     return_dataframe=False, remove_sil=False):
     if remove_sil:
-        df = df.drop(index=(df.text == 'sil').index)
+        df = df.drop(df[df.text == 'sil'].index)
     else:
         # Replace 'sil' by empty sentence
         df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
-
+    print((df.text == 'sil').any())
     if id2label is None:
         id2label = get_id2label_dict(df.text)
     label2id = {v: k for k, v in id2label.items()}
