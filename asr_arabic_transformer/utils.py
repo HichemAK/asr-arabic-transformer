@@ -66,9 +66,12 @@ def get_id2label_dict(text_series):
 
 
 def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_length_text=None, max_length_data=None,
-                    return_dataframe=False):
-    # Replace 'sil' by empty sentence
-    df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
+                    return_dataframe=False, remove_sil=False):
+    if remove_sil:
+        df = df.drop((df.text == 'sil').index)
+    else:
+        # Replace 'sil' by empty sentence
+        df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
 
     if id2label is None:
         id2label = get_id2label_dict(df.text)
@@ -302,14 +305,15 @@ def get_id2label_hdf(hdf_filepath):
     return id2label, max_length_text
 
 
-def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True):
+def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, remove_sil=False):
     id2label, max_length_text, max_length_data, mean, std = get_all_infos_hdf(hdf_filepath)
     store_prepared = pd.HDFStore(hdf_prepared_filepath, 'w')
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
         res = prepare_dataset(df, normalize=normalize, mean_std=(mean, std), id2label=id2label,
-                              max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True)
+                              max_length_text=max_length_text, max_length_data=max_length_data, return_dataframe=True,
+                              remove_sil=remove_sil)
         df = res['df']
         store_prepared['chunk' + str(i)] = df
 
