@@ -227,7 +227,7 @@ def save_dataframe_into_chunks(df: pd.DataFrame, path, size_chunk=256, replace=F
 def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
     """
     Returns:
-    id2label, max_length_text, max_length_data, mean, std
+    id2label, max_length_text, max_length_data, mean, std, weights
         """
     if text_to_avoid is None:
         text_to_avoid = ['sil']
@@ -253,16 +253,31 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
 
     mean = s / count
     s = 0
+    label2id['<START>'] = len(label2id)
+    label2id['<END>'] = len(label2id)
+    dict_weights = {k : 0 for k in label2id}
+
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
         for data in df.data:
             s += np.sum((data - mean) ** 2)
+        for text in df.text:
+            if text not in text_to_avoid:
+                for c in text:
+                    dict_weights[c] += 1
+                dict_weights['<START>'] += 1
+                dict_weights['<END>'] += max_length_text - len(text) + 1
+    dict_weights = {label2id[k] : v for k, v in dict_weights.items()}
+    weights = np.array([dict_weights[i] for i in range(len(dict_weights))])
+    weights = np.sum(weights) / weights
+
+
 
     std = math.sqrt(s / count)
 
     store.close()
     id2label = {v: k for k, v in label2id.items()}
-    return id2label, max_length_text, max_length_data, mean, std
+    return id2label, max_length_text, max_length_data, mean, std, weights
 
 
 def mean_std(hdf_filepath):
@@ -305,7 +320,7 @@ def get_id2label_hdf(hdf_filepath):
 
 
 def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, remove_sil=False):
-    id2label, max_length_text, max_length_data, mean, std = get_all_infos_hdf(hdf_filepath)
+    id2label, max_length_text, max_length_data, mean, std, weights = get_all_infos_hdf(hdf_filepath)
     store_prepared = pd.HDFStore(hdf_prepared_filepath, 'w')
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
@@ -320,7 +335,7 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, rem
     store_prepared.close()
     store.close()
     infos = {'id2label' : id2label, 'max_length_text' : max_length_text, 'max_length_data' : max_length_data,
-             'mean' : mean, 'std' : std, 'input_size' : input_size}
+             'mean' : mean, 'std' : std, 'input_size' : input_size, 'weights' : weights}
     return infos
 
 

@@ -52,7 +52,9 @@ class TrainerHDF:
                 count += 1
                 if count % print_every == 0:
                     print("Iteration :", len(train_loss_history), "Loss :", loss / count, "   Accuracy :",
-                          accuracy / count, "   lr :", self.optimizer.lr)
+                          accuracy / count, "   lr :", end=' ')
+                    for param_group in self.optimizer.param_groups:
+                        print(param_group['lr'])
 
             valid_loss = 0
             accuracy = 0
@@ -98,12 +100,14 @@ class TrainerHDF:
         self.optimizer.zero_grad()
         out = self.model(x, target[:, :-1], src_padding, target_padding)
         loss = self.loss_function(out, target[:, 1:])
+
         accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
         loss.backward()
         self.optimizer.step()
         self.step += 1
         if self.scheduler is not None:
-            self.optimizer.lr = self.scheduler(self.step)
+            for param_group in self.optimizer.param_groups:
+                param_group['lr'] = self.scheduler(self.step)
         return loss.item(), accuracy
 
 

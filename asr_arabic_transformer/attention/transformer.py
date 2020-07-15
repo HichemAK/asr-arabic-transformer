@@ -40,7 +40,7 @@ class Transformer(nn.Module):
             if src_mask is None:
                 src_mask = torch.ones((src.shape[-2], src.shape[-2]), dtype=torch.bool)
             src_mask_padding = torch.ones((src.shape[-3], src.shape[-2]), dtype=torch.bool)
-            for i in range(target_padding.shape[0]):
+            for i in range(src_padding.shape[0]):
                 src_mask_padding[i, src_padding[i]:] = False
             src_mask = src_mask.unsqueeze(0)
             src_mask_padding = src_mask_padding.unsqueeze(1)
