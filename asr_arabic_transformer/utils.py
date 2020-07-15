@@ -72,7 +72,6 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     else:
         # Replace 'sil' by empty sentence
         df.text = df.text.apply(lambda x: '' if x == 'sil' else x)
-    print((df.text == 'sil').any())
     if id2label is None:
         id2label = get_id2label_dict(df.text)
     label2id = {v: k for k, v in id2label.items()}

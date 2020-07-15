@@ -7,7 +7,7 @@ from pandas import HDFStore
 
 class TrainerHDF:
     def __init__(self, train_hdf_path, dev_hdf_path, get_batch, model, optimizer, loss_function, device=None,
-                 seed=636248):
+                 scheduler=None, seed=636248):
         self.train_hdf_path = train_hdf_path
         self.dev_hdf_path = dev_hdf_path
         self.model = model
@@ -22,6 +22,9 @@ class TrainerHDF:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
         self.model = self.model.to(self.device)
+        self.scheduler = scheduler
+        self.step = 0
+
 
     def train(self, print_every, batch_size, max_epochs, early_stop_epochs, path_save="", save_name="model_save{}.pt"):
         self.num_exec += 1
@@ -49,7 +52,7 @@ class TrainerHDF:
                 count += 1
                 if count % print_every == 0:
                     print("Iteration :", len(train_loss_history), "Loss :", loss / count, "   Accuracy :",
-                          accuracy / count)
+                          accuracy / count, "   lr :", self.optimizer.lr)
 
             valid_loss = 0
             accuracy = 0
@@ -88,6 +91,7 @@ class TrainerHDF:
         store_train.close()
         store_dev.close()
 
+
     def fit_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
             x, target = x.cuda(), target.cuda()
@@ -97,7 +101,11 @@ class TrainerHDF:
         accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
         loss.backward()
         self.optimizer.step()
+        self.step += 1
+        if self.scheduler is not None:
+            self.optimizer.lr = self.scheduler(self.step)
         return loss.item(), accuracy
+
 
     def eval_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
