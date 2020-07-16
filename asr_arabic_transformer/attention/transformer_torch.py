@@ -14,8 +14,9 @@ class TransformerTorch(nn.Module):
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    def forward(self, src, target, src_padding, target_padding):
-        target_mask = get_mask(target.size(1))
+    def forward(self, src, target, src_mask, target_mask, src_padding, target_padding):
+        if target_mask == 'triu':
+            target_mask = get_mask(target.size(1))
         src_mask_padding = None
         target_mask_padding = None
         if src_padding is not None:
@@ -35,6 +36,6 @@ class TransformerTorch(nn.Module):
 
         src = torch.transpose(src, 0, 1)
         target = torch.transpose(target, 0, 1)
-        res = self.transformer(src, target, None, target_mask, None, src_mask_padding, target_mask_padding)
+        res = self.transformer(src, target, src_mask, target_mask, None, src_mask_padding, target_mask_padding)
         res = res.transpose(0, 1)
         return res
