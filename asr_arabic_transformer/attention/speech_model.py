@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from asr_arabic_transformer.attention.transformer import Transformer
+from asr_arabic_transformer.attention.transformer_torch import TransformerTorch
 from asr_arabic_transformer.utils import conv_output_shape, maxpool_output_shape, get_mask
 import torch.nn.functional as F
 
@@ -23,7 +24,7 @@ class CNN(nn.Module):
 
 
 class SpeechModel(nn.Module):
-    def __init__(self, input_size, n_classes, use_cnn=True, **transformer_params):
+    def __init__(self, input_size, n_classes, use_cnn=True, torch_version=False, **transformer_params):
         super().__init__()
         self.cnn = None
         if use_cnn:
@@ -36,8 +37,11 @@ class SpeechModel(nn.Module):
             output_cnn *= self.cnn.conv2.out_channels
         else:
             output_cnn = input_size
+        if torch_version:
+            self.transformer = TransformerTorch(**transformer_params)
+        else:
+            self.transformer = Transformer(**transformer_params)
 
-        self.transformer = Transformer(**transformer_params)
         self.linear1 = nn.Linear(output_cnn, self.transformer.d_model)
         self.embed = nn.Embedding(n_classes, self.transformer.d_model)
         self.linear2 = nn.Linear(self.transformer.d_model, n_classes)
