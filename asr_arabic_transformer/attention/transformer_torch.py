@@ -15,7 +15,7 @@ class TransformerTorch(nn.Module):
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.d_model = d_model
 
-    def forward(self, src, target, src_mask, target_mask, src_padding, target_padding):
+    def forward(self, src, target, src_mask=None, target_mask=None, src_padding=None, target_padding=None):
         if target_mask == 'triu':
             target_mask = get_mask(target.size(1))
         src_mask_padding = None
