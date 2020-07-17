@@ -15,14 +15,25 @@ class TransformerTorch(nn.Module):
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.d_model = d_model
 
-    def _get_decoder(self):
-        return self.transformer.decoder
+    def encoder(self, src, src_mask=None, src_padding=None):
+        src_mask_padding = None
+        if src_padding is not None:
+            src_mask_padding = torch.zeros((src.shape[-3], src.shape[-2]), dtype=torch.bool)
+            for i in range(src_padding.shape[0]):
+                src_mask_padding[i, src_padding[i]:] = True
+        src = torch.transpose(src, 0, 1)
+        return self.transformer.decoder(src, src_mask, src_mask_padding).transpose(0,1)
 
-    def _get_encoder(self):
-        return self.transformer.encoder
-
-    decoder = property(_get_decoder)
-    encoder = property(_get_encoder)
+    def decoder(self, target, encoder_out, target_mask, target_padding):
+        target_mask_padding = None
+        if target_mask == 'triu':
+            target_mask = get_mask(target.size(1))
+        if target_padding is not None:
+            target_mask_padding = torch.zeros((target.shape[-3], target.shape[-2]), dtype=torch.bool)
+            for i in range(target_padding.shape[0]):
+                target_mask_padding[i, target_padding[i]:] = True
+        target = torch.transpose(target, 0, 1)
+        return self.transformer.decoder(target, encoder_out, target_mask, None, target_mask_padding)
 
 
     def forward(self, src, target, src_mask=None, target_mask=None, src_padding=None, target_padding=None):
