@@ -24,7 +24,7 @@ class TransformerTorch(nn.Module):
         src = torch.transpose(src, 0, 1)
         return self.transformer.encoder(src, src_mask, src_mask_padding).transpose(0,1)
 
-    def decoder(self, target, encoder_out, target_mask, target_padding):
+    def decoder(self, target, encoder_out, target_mask=None, target_padding=None):
         target_mask_padding = None
         if target_mask == 'triu':
             target_mask = get_mask(target.size(1))
