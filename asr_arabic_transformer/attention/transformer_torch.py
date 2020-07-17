@@ -26,7 +26,7 @@ class TransformerTorch(nn.Module):
 
     def decoder(self, target, encoder_out, target_mask=None, target_padding=None):
         target_mask_padding = None
-        if target_mask == 'triu':
+        if not torch.is_tensor(target_mask) and target_mask == 'triu':
             target_mask = get_mask(target.size(1))
         if target_padding is not None:
             target_mask_padding = torch.zeros((target.shape[-3], target.shape[-2]), dtype=torch.bool)
