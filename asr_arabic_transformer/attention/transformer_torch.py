@@ -33,7 +33,8 @@ class TransformerTorch(nn.Module):
             for i in range(target_padding.shape[0]):
                 target_mask_padding[i, target_padding[i]:] = True
         target = torch.transpose(target, 0, 1)
-        return self.transformer.decoder(target, encoder_out, target_mask, None, target_mask_padding)
+        encoder_out = torch.transpose(encoder_out, 0,1)
+        return self.transformer.decoder(target, encoder_out, target_mask, None, target_mask_padding).transpose(0,1)
 
 
     def forward(self, src, target, src_mask=None, target_mask=None, src_padding=None, target_padding=None):
