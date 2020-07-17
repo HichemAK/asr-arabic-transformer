@@ -1,9 +1,29 @@
 import torch
+import torch.nn.functional as F
 from torch import nn
+
 from asr_arabic_transformer.attention.transformer import Transformer
 from asr_arabic_transformer.attention.transformer_torch import TransformerTorch
 from asr_arabic_transformer.utils import conv_output_shape, maxpool_output_shape, get_mask
-import torch.nn.functional as F
+
+""" Validated:
+components : 
+    - MHA : OK
+    - PE : OK
+    - FF : OK
+    - Norm : OK
+decoder : 
+    Decoder : OK
+    DecoderLayer : OK
+encoder:
+    Encoder : OK
+    EncoderLayer : OK
+transformer:
+    Transformer : OK
+speech_model:
+    CNN : OK
+    SpeechModel : OK
+"""
 
 
 class CNN(nn.Module):
@@ -32,7 +52,7 @@ class SpeechModel(nn.Module):
         self.n_classes = n_classes
         if use_cnn:
             _, output_cnn = conv_output_shape((100, input_size), kernel_size=3, stride=2)
-            _, output_cnn= conv_output_shape((100, output_cnn), kernel_size=3, stride=2)
+            _, output_cnn = conv_output_shape((100, output_cnn), kernel_size=3, stride=2)
             _, output_cnn = maxpool_output_shape((100, output_cnn), 2, 2)
             output_cnn *= self.cnn.conv2.out_channels
         else:
@@ -63,12 +83,14 @@ class SpeechModel(nn.Module):
         return x
 
     def predict(self, x, sos, eos):
-        x = x.unsqueeze(-3).unsqueeze(0)
-        x = torch.transpose(x, -1, -2)
-        x = self.cnn(x)
-        x = x.view(x.shape[0], -1, x.shape[-1])
+        x = x.unsqueeze(0)
+        if self.use_cnn:
+            x = x.unsqueeze(-3)
+            x = torch.transpose(x, -1, -2)
+            x = self.cnn(x)
+            x = x.view(x.shape[0], -1, x.shape[-1])
+            x = torch.transpose(x, -1, -2)
 
-        x = torch.transpose(x, -1, -2)
         x = self.linear1(x)
 
         x = self.transformer.encoder(x)

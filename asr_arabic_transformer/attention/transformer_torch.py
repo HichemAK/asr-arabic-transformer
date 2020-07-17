@@ -15,6 +15,16 @@ class TransformerTorch(nn.Module):
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.d_model = d_model
 
+    def _get_decoder(self):
+        return self.transformer.decoder
+
+    def _get_encoder(self):
+        return self.transformer.encoder
+
+    decoder = property(_get_decoder)
+    encoder = property(_get_encoder)
+
+
     def forward(self, src, target, src_mask=None, target_mask=None, src_padding=None, target_padding=None):
         if target_mask == 'triu':
             target_mask = get_mask(target.size(1))

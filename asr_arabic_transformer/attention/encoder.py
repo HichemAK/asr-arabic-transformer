@@ -3,6 +3,7 @@ from torch.nn import ModuleList
 
 from asr_arabic_transformer.attention.components import MultiHeadAttention, Norm, FeedForward, PositionalEncoder
 
+
 class EncoderLayer(nn.Module):
     def __init__(self, d_model, d_ff, n_heads, dropout):
         super().__init__()
@@ -21,8 +22,9 @@ class EncoderLayer(nn.Module):
         x = self.norm2(x + self.dropout2(self.feed_forward(x)))
         return x
 
+
 class Encoder(nn.Module):
-    def __init__(self, d_model, d_ff, n_heads, N, dropout=0.1, max_seq_len=128):
+    def __init__(self, d_model, d_ff, n_heads, N, dropout=0.1, max_seq_len=1024):
         super().__init__()
         self.pe = PositionalEncoder(d_model, dropout, max_seq_len)
         self.encoder_layers = ModuleList([EncoderLayer(d_model, d_ff, n_heads, dropout) for _ in range(N)])

@@ -7,7 +7,7 @@ from asr_arabic_transformer.utils import get_mask
 
 
 class Transformer(nn.Module):
-    def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=512, device=None):
+    def __init__(self, d_model=512, d_ff=2048, n_heads=8, Ne=6, Nd=6, dropout=0.1, max_seq_len=1024, device=None):
         super().__init__()
         self.d_model = d_model
         self.d_ff = d_ff
@@ -68,7 +68,6 @@ class Transformer(nn.Module):
 
         if target_mask is not None and self.device == 'cuda':
             target_mask = target_mask.cuda()
-
 
         x = self.decoder(target, encoder_out, target_mask)
         return x

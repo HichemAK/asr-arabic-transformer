@@ -1,13 +1,14 @@
 import math
+import os
 import random
 
+import librosa
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from pandas import Series, DataFrame
 from torch import nn
-import os
 
 
 def one_hot(y, num_classes):
@@ -136,7 +137,7 @@ def add_tokens(text_series: Series, id2label):
         last += 1
     if end not in id2label.values():
         id2label[last] = end
-    label2id = {v:k for k,v in id2label.items()}
+    label2id = {v: k for k, v in id2label.items()}
     text_series = text_series.apply(lambda x: [label2id[start]] + x + [label2id[end]])
     return text_series, id2label
 
@@ -255,7 +256,7 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
     s = 0
     label2id['<START>'] = len(label2id)
     label2id['<END>'] = len(label2id)
-    dict_weights = {k : 0 for k in label2id}
+    dict_weights = {k: 0 for k in label2id}
 
     for i in range(len(store.keys())):
         df = store['chunk' + str(i)]
@@ -267,11 +268,9 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
                     dict_weights[c] += 1
                 dict_weights['<START>'] += 1
                 dict_weights['<END>'] += max_length_text - len(text) + 1
-    dict_weights = {label2id[k] : v for k, v in dict_weights.items()}
+    dict_weights = {label2id[k]: v for k, v in dict_weights.items()}
     weights = np.array([dict_weights[i] for i in range(len(dict_weights))])
     weights = np.sum(weights) / weights
-
-
 
     std = math.sqrt(s / count)
 
@@ -334,8 +333,8 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, rem
     input_size = df.data.iloc[0].shape[-1]
     store_prepared.close()
     store.close()
-    infos = {'id2label' : id2label, 'max_length_text' : max_length_text, 'max_length_data' : max_length_data,
-             'mean' : mean, 'std' : std, 'input_size' : input_size, 'weights' : weights}
+    infos = {'id2label': id2label, 'max_length_text': max_length_text, 'max_length_data': max_length_data,
+             'mean': mean, 'std': std, 'input_size': input_size, 'weights': weights}
     return infos
 
 
@@ -360,3 +359,10 @@ def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9)
     store_train.close()
     store_dev.close()
     os.remove(hdf_filepath)
+
+
+def prepare_audio_mfcc(audio_path):
+    audio, sr = librosa.load(audio_path, sr=8000)
+    y = librosa.feature.melspectrogram(audio, sr, n_mels=7, fmax=8000, n_fft=200, hop_length=80)
+    y = librosa.amplitude_to_db(y)
+    return y

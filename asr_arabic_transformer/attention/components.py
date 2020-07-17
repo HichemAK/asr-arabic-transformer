@@ -1,17 +1,19 @@
-import torch
-from torch import nn
-import torch.nn.functional as F
 import math
 
+import torch
+import torch.nn.functional as F
+from torch import nn
+
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_model, n_heads):
         super().__init__()
-        self.q_linear = nn.Linear(d_model, d_model)
-        self.v_linear = nn.Linear(d_model, d_model)
-        self.k_linear = nn.Linear(d_model, d_model)
-        self.project = nn.Linear(d_model, d_model)
+        self.q_linear = nn.Linear(d_model, d_model, bias=False)
+        self.v_linear = nn.Linear(d_model, d_model, bias=False)
+        self.k_linear = nn.Linear(d_model, d_model, bias=False)
+        self.project = nn.Linear(d_model, d_model, bias=False)
         self.n_heads = n_heads
         self.d_model = d_model
         self.d_k = d_model // n_heads
@@ -19,11 +21,12 @@ class MultiHeadAttention(nn.Module):
 
     def forward(self, q, k, v, mask=None):
         # (bs, sl, d_model)
-        bs, sl, _ = q.shape
-        sl2 = k.shape[1]
-        q = self.q_linear(q).view(bs, sl, self.n_heads, self.d_k)
-        k = self.k_linear(k).view(bs, sl2, self.n_heads, self.d_k)
-        v = self.v_linear(v).view(bs, sl2, self.n_heads, self.d_k)
+        bs, sl_q, _ = q.shape
+        sl_k = k.shape[-2]
+        sl_v = v.shape[-2]
+        q = self.q_linear(q).view(bs, sl_q, self.n_heads, self.d_k)
+        k = self.k_linear(k).view(bs, sl_k, self.n_heads, self.d_k)
+        v = self.v_linear(v).view(bs, sl_v, self.n_heads, self.d_k)
 
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
@@ -38,7 +41,7 @@ class MultiHeadAttention(nn.Module):
         z = F.softmax(z, dim=-1)
         z = z @ v
 
-        z = self.project(z.transpose(1, 2).contiguous().view(bs, sl, -1))
+        z = self.project(z.transpose(1, 2).contiguous().view(bs, sl_q, -1))
         return z
 
 
@@ -67,8 +70,9 @@ class Norm(nn.Module):
         norm = self.alpha * (x - x.mean(dim=-1, keepdim=True)) / (x.std(dim=-1, keepdim=True) + self.eps) + self.bias
         return norm
 
+
 class PositionalEncoder(nn.Module):
-    def __init__(self, d_model, dropout, max_seq_len):
+    def __init__(self, d_model, dropout, max_seq_len=1024):
         super().__init__()
         self.d_model = d_model
         self.dropout = nn.Dropout(dropout)
@@ -83,26 +87,7 @@ class PositionalEncoder(nn.Module):
 
     def forward(self, x):
         seq_len = x.size(1)
-        p = self.pe[:, :seq_len].clone().detach()
+        p = self.pe[:, :seq_len]
         x = x + p
         x = self.dropout(x)
         return x
-
-
-class PositionalEncoding(nn.Module):
-
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
-        super(PositionalEncoding, self).__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
-
-    def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)

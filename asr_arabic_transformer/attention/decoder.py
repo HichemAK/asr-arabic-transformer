@@ -26,6 +26,7 @@ class DecoderLayer(nn.Module):
         x = self.norm3(x + self.dropout3(self.feed_forward(x)))
         return x
 
+
 class Decoder(nn.Module):
     def __init__(self, d_model, d_ff, n_heads, N, dropout=0.1, max_seq_len=128):
         super().__init__()
@@ -34,6 +35,7 @@ class Decoder(nn.Module):
 
     def forward(self, target, encoder_out, target_mask=None):
         target = self.pe(target)
+        x = target
         for dec in self.decoder_layers:
-            x = dec(target, encoder_out, target_mask)
+            x = dec(x, encoder_out, target_mask)
         return x
