@@ -78,7 +78,7 @@ class Attention_RNN(nn.Module):
             result.append(int(torch.argmax(y, -1)[0]))
             if result[-1] == eos:
                 break
-        result = torch.stack(result, dim=1)
+        result = torch.tensor(result)
         return result
 
 if __name__ == "__main__":
