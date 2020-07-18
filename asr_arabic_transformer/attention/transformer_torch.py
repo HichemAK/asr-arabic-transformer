@@ -54,11 +54,6 @@ class TransformerTorch(nn.Module):
             for i in range(target_padding.shape[0]):
                 target_mask_padding[i, target_padding[i]:] = True
 
-        if self.device == 'cuda':
-            target_mask = target_mask.cuda() if target_mask is not None else None
-            src_mask_padding = src_mask_padding.cuda() if src_mask_padding is not None else None
-            target_mask_padding = target_mask_padding.cuda() if target_mask_padding is not None else None
-
         src = self.pe(src)
         target = self.pe(target)
 
@@ -76,6 +71,11 @@ class TransformerTorch(nn.Module):
             t = torch.zeros(target_mask.shape, dtype=torch.float)
             t = t.masked_fill(target_mask, -1e10)
             target_mask = t
+
+        if self.device == 'cuda':
+            target_mask = target_mask.cuda() if target_mask is not None else None
+            src_mask_padding = src_mask_padding.cuda() if src_mask_padding is not None else None
+            target_mask_padding = target_mask_padding.cuda() if target_mask_padding is not None else None
 
         res = self.transformer(src, target, src_mask, target_mask, None, src_mask_padding, target_mask_padding)
         res = res.transpose(0, 1)
