@@ -73,6 +73,7 @@ class TransformerTorch(nn.Module):
             target_mask = t
 
         if self.device == 'cuda':
+            src_mask = src_mask.cuda() if src_mask is not None else None
             target_mask = target_mask.cuda() if target_mask is not None else None
             src_mask_padding = src_mask_padding.cuda() if src_mask_padding is not None else None
             target_mask_padding = target_mask_padding.cuda() if target_mask_padding is not None else None
