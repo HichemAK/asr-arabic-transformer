@@ -1,7 +1,7 @@
 from torch import nn
 from torch.nn import ModuleList
 
-from asr_arabic_transformer.attention.components import MultiHeadAttention, Norm, FeedForward, PositionalEncoder
+from asr_arabic_transformer.attention.components import MultiHeadAttention, Norm, FeedForward
 
 
 class DecoderLayer(nn.Module):
@@ -28,13 +28,11 @@ class DecoderLayer(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, d_model, d_ff, n_heads, N, dropout=0.1, max_seq_len=128):
+    def __init__(self, d_model, d_ff, n_heads, N, dropout=0.1):
         super().__init__()
-        self.pe = PositionalEncoder(d_model, dropout, max_seq_len)
         self.decoder_layers = ModuleList([DecoderLayer(d_model, d_ff, n_heads, dropout) for _ in range(N)])
 
     def forward(self, target, encoder_out, target_mask=None):
-        target = self.pe(target)
         x = target
         for dec in self.decoder_layers:
             x = dec(x, encoder_out, target_mask)

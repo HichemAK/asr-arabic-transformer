@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch.nn.modules.transformer import Transformer
 
+from asr_arabic_transformer.attention.components import PositionalEncoder
 from asr_arabic_transformer.utils import get_mask
 
 
@@ -14,6 +15,7 @@ class TransformerTorch(nn.Module):
         if device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.d_model = d_model
+        self.pe = PositionalEncoder(d_model, dropout)
 
     def encoder(self, src, src_mask=None, src_padding=None):
         src_mask_padding = None
@@ -56,6 +58,9 @@ class TransformerTorch(nn.Module):
             target_mask = target_mask.cuda() if target_mask is not None else None
             src_mask_padding = src_mask_padding.cuda() if src_mask_padding is not None else None
             target_mask_padding = target_mask_padding.cuda() if target_mask_padding is not None else None
+
+        src = self.pe(src)
+        target = self.pe(target)
 
         src = torch.transpose(src, 0, 1)
         target = torch.transpose(target, 0, 1)
