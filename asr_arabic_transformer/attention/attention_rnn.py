@@ -6,16 +6,16 @@ import torch.nn.functional as F
 class Attention_RNN(nn.Module):
     """Class containing the architecture of the model and the corresponding weights
     Contains a classical implementation of attention model"""
-    def __init__(self, num_alphabet, Ty, save_attention=False):
+    def __init__(self, input_size, num_alphabet, Ty, save_attention=False):
         super().__init__()
         self.num_alphabet = num_alphabet
+        self.input_size = input_size
         self.Ty = Ty
         self.Tx = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-        self.embed = nn.Embedding(self.num_alphabet, 25)
-        self.encoder = nn.LSTM(25, hidden_size=128, num_layers=2, bidirectional=True, batch_first=True)
+        self.encoder = nn.LSTM(input_size, hidden_size=128, num_layers=2, bidirectional=True, batch_first=True)
         self.post_attention_lstm = nn.LSTM(self.encoder.hidden_size * 2, hidden_size=128, num_layers=1, batch_first=True)
         self.attention = nn.Sequential(nn.Linear(self.encoder.hidden_size*2 + self.post_attention_lstm.hidden_size, 80),
                                        nn.ReLU(), nn.Linear(80, 1))
@@ -40,7 +40,6 @@ class Attention_RNN(nn.Module):
             self.infos["attention"] = []
 
         result = []
-        x = self.embed(x)
         x, _ = self.encoder(x)
         self.Tx = x.shape[1]
         s_prev, c_prev = self.init_hidden(self.post_attention_lstm, x.shape[0])
@@ -65,7 +64,6 @@ class Attention_RNN(nn.Module):
         # (Tx, )
         result = []
         x = x.unsqueeze(0)
-        x = self.embed(x)
         x, _ = self.encoder(x)
         self.Tx = x.shape[1]
         s_prev, c_prev = self.init_hidden(self.post_attention_lstm, x.shape[0])
