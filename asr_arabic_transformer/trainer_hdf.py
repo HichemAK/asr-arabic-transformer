@@ -7,7 +7,7 @@ from pandas import HDFStore
 
 class TrainerHDF:
     def __init__(self, train_hdf_path, dev_hdf_path, get_batch, model, optimizer, loss_function, device=None,
-                 scheduler=None, seed=636248):
+                 scheduler=None, shift_target=True, seed=636248):
         self.train_hdf_path = train_hdf_path
         self.dev_hdf_path = dev_hdf_path
         self.model = model
@@ -24,6 +24,7 @@ class TrainerHDF:
         self.model = self.model.to(self.device)
         self.scheduler = scheduler
         self.step = 0
+        self.shift_target = shift_target
 
 
     def train(self, print_every, batch_size, max_epochs, early_stop_epochs, path_save="", save_name="model_save{}.pt"):
@@ -98,10 +99,16 @@ class TrainerHDF:
         if self.device == 'cuda':
             x, target = x.cuda(), target.cuda()
         self.optimizer.zero_grad()
-        out = self.model(x, target[:, :-1], src_padding, target_padding)
-        loss = self.loss_function(out, target[:, 1:])
+        if self.shift_target:
+            out = self.model(x, target[:, :-1], src_padding, target_padding)
+            loss = self.loss_function(out, target[:, 1:])
+            accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
+        else:
+            out = self.model(x)
+            loss = self.loss_function(out, target)
+            accuracy = int(torch.all(out.argmax(dim=-1) == target, dim=-1).to(torch.int).sum()) / out.shape[0]
 
-        accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
+
         loss.backward()
         self.optimizer.step()
         self.step += 1
@@ -114,7 +121,14 @@ class TrainerHDF:
     def eval_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
             x, target = x.cuda(), target.cuda()
-        out = self.model(x, target[:, :-1], src_padding=src_padding, target_padding=target_padding)
-        loss = self.loss_function(out, target[:, 1:])
-        accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
+
+        if self.shift_target:
+            out = self.model(x, target[:, :-1], src_padding, target_padding)
+            loss = self.loss_function(out, target[:, 1:])
+            accuracy = int(torch.all(out.argmax(dim=-1) == target[:, 1:], dim=-1).to(torch.int).sum()) / out.shape[0]
+        else:
+            out = self.model(x)
+            loss = self.loss_function(out, target)
+            accuracy = int(torch.all(out.argmax(dim=-1) == target, dim=-1).to(torch.int).sum()) / out.shape[0]
+
         return loss.item(), accuracy
