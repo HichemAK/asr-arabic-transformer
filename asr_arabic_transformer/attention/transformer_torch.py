@@ -64,6 +64,19 @@ class TransformerTorch(nn.Module):
 
         src = torch.transpose(src, 0, 1)
         target = torch.transpose(target, 0, 1)
+
+        if src_mask is not None:
+            t = torch.zeros(src_mask.shape, dtype=torch.float)
+            t = t.masked_fill(src_mask, -1e10)
+            src_mask = t
+        else:
+            src_mask = torch.zeros((src.size(0), src.size(0)), dtype=torch.float)
+
+        if target_mask is not None:
+            t = torch.zeros(target_mask.shape, dtype=torch.float)
+            t = t.masked_fill(target_mask, -1e10)
+            target_mask = t
+
         res = self.transformer(src, target, src_mask, target_mask, None, src_mask_padding, target_mask_padding)
         res = res.transpose(0, 1)
         return res
