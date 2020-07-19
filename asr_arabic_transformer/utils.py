@@ -364,5 +364,5 @@ def train_dev_split(hdf_filepath, hdf_train_path, hdf_dev_path, train_share=0.9)
 def prepare_audio_mfcc(audio_path):
     audio, sr = librosa.load(audio_path, sr=8000)
     y = librosa.feature.melspectrogram(audio, sr, n_mels=7, fmax=8000, n_fft=200, hop_length=80)
-    y = librosa.amplitude_to_db(y)
+    y = librosa.power_to_db(y)
     return y
