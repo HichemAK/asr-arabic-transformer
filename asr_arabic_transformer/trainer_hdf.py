@@ -7,7 +7,7 @@ from pandas import HDFStore
 
 class TrainerHDF:
     def __init__(self, train_hdf_path, dev_hdf_path, get_batch, model, optimizer, loss_function, device=None,
-                 scheduler=None, shift_target=True, annealing_valid=False, valid_checks=3, seed=636248):
+                 scheduler=None, shift_target=True, annealing_valid=False, valid_check=3, seed=636248):
         self.train_hdf_path = train_hdf_path
         self.dev_hdf_path = dev_hdf_path
         self.model = model
@@ -26,7 +26,7 @@ class TrainerHDF:
         self.step = 0
         self.shift_target = shift_target
         self.annealing_valid = annealing_valid
-        self.valid_checks = valid_checks
+        self.valid_check = valid_check
 
 
     def train(self, print_every, batch_size, max_epochs, early_stop_epochs, path_save="", save_name="model_save{}.pt"):
