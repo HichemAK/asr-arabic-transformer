@@ -6,15 +6,16 @@ import torch.nn.functional as F
 class Attention_RNN(nn.Module):
     """Class containing the architecture of the model and the corresponding weights
     Contains a classical implementation of attention model"""
-    def __init__(self, num_alphabet, Ty, project_size=25, encoder_hidden_size=128,
+    def __init__(self, input_size, num_alphabet, Ty, project_size=25, encoder_hidden_size=128,
                  encoder_num_layers=2, decoder_hidden_size=128, decoder_num_layers=1, save_attention=False):
         super().__init__()
         self.num_alphabet = num_alphabet
+        self.input_size = input_size
         self.Ty = Ty
         self.Tx = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        self.fc1 = nn.Linear(self.num_alphabet, project_size)
+        self.fc1 = nn.Linear(input_size, project_size)
         self.encoder = nn.LSTM(project_size, hidden_size=encoder_hidden_size, num_layers=encoder_num_layers,
                                bidirectional=True, batch_first=True)
         self.post_attention_lstm = nn.LSTM(self.encoder.hidden_size * 2, hidden_size=decoder_hidden_size,
