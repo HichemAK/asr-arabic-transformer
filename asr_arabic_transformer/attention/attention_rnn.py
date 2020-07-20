@@ -74,6 +74,7 @@ class Attention_RNN(nn.Module):
         # (Tx, )
         result = []
         x = x.unsqueeze(0)
+        x = self.fc1(x)
         x, _ = self.encoder(x)
         self.Tx = x.shape[1]
         s_prev, c_prev = self.init_hidden(self.post_attention_lstm, x.shape[0])

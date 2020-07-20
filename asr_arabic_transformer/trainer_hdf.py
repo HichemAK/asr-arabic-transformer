@@ -7,7 +7,10 @@ from pandas import HDFStore
 
 class TrainerHDF:
     def __init__(self, train_hdf_path, dev_hdf_path, get_batch, model, optimizer, loss_function, device=None,
-                 scheduler=None, shift_target=True, annealing_valid=False, valid_check=3, seed=636248):
+                 scheduler=None, shift_target=True, annealing_valid=False, valid_check=3, annealing_coeff=0.5,
+                 validation_by_accuracy=False, seed=636248):
+        self.validation_by_accuracy = validation_by_accuracy
+        self.annealing_coeff = annealing_coeff
         self.train_hdf_path = train_hdf_path
         self.dev_hdf_path = dev_hdf_path
         self.model = model
@@ -27,7 +30,6 @@ class TrainerHDF:
         self.shift_target = shift_target
         self.annealing_valid = annealing_valid
         self.valid_check = valid_check
-
 
     def train(self, print_every, batch_size, max_epochs, early_stop_epochs, path_save="", save_name="model_save{}.pt"):
         self.num_exec += 1
@@ -94,14 +96,12 @@ class TrainerHDF:
                         for param_group in self.optimizer.param_groups:
                             param_group['lr'] = param_group['lr'] * 0.5
 
-
             if early_stop_epochs < epochs_without_improving:
                 break
             print("\n\n")
         print("Best Validation Loss : ", best_loss)
         store_train.close()
         store_dev.close()
-
 
     def fit_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
@@ -116,7 +116,6 @@ class TrainerHDF:
             loss = self.loss_function(out, target)
             accuracy = int(torch.all(out.argmax(dim=-1) == target, dim=-1).to(torch.int).sum()) / out.shape[0]
 
-
         loss.backward()
         self.optimizer.step()
         self.step += 1
@@ -124,7 +123,6 @@ class TrainerHDF:
             for param_group in self.optimizer.param_groups:
                 param_group['lr'] = self.scheduler(self.step)
         return loss.item(), accuracy
-
 
     def eval_batch(self, x, target, src_padding=None, target_padding=None):
         if self.device == 'cuda':
