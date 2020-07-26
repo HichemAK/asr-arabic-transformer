@@ -23,6 +23,9 @@ class SpeechRNN(nn.Module):
     def predict(self, x, eos, max_iter=100):
         return self.attention_rnn.predict(x, eos, max_iter)
 
+    def beam_search(self, x, beam_width, eos, max_iter=100):
+        return self.attention_rnn.beam_search(x, beam_width, eos, max_iter=100)
+
 
 if __name__ == '__main__':
     model = SpeechRNN(10, 10, 20,

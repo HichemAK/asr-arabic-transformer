@@ -16,14 +16,16 @@ def pre_process_file_mfcc(file_path):
     return mfcc
 
 
-def pre_process_audio_mfcc(audio, sr):
-    mfcc = librosa.feature.mfcc(y=audio,
-                                sr=sr,
-                                n_mfcc=40,
-                                n_mels=80,
-                                n_fft=551,
-                                hop_length=220)
+def pre_process_file_mel_log(file_path):
+    audio, sampling_rate = librosa.load(file_path)
 
-    mfcc = (mfcc - mfcc.mean(axis=-1)[:, np.newaxis]) / mfcc.std(axis=-1)[:, np.newaxis]
+    mel = librosa.feature.melspectrogram(y=audio,
+                                         sr=sampling_rate,
+                                         n_mels=80,
+                                         n_fft=551,
+                                         hop_length=220,
+                                         fmax=11025)
 
-    return mfcc
+    mel_db = librosa.power_to_db(mel, ref=np.max)
+
+    return mel_db
