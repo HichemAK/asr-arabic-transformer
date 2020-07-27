@@ -141,7 +141,7 @@ class TrainerHDF:
 
         return loss.item(), accuracy
 
-def evaluate(model, test_hdf_file, get_batch, loss_function, batch_size):
+def evaluate(model, test_hdf_file, get_batch, loss_function, batch_size, cuda=False):
     store_test = HDFStore(test_hdf_file)
     test_loss = 0
     accuracy = 0
@@ -149,6 +149,8 @@ def evaluate(model, test_hdf_file, get_batch, loss_function, batch_size):
     model.eval()
     test_gen = get_batch(store_test, batch_size)
     for x, target, src_padding, target_padding in test_gen:
+        if cuda:
+            x = x.cuda()
         out = model(x)
         loss = loss_function(out, target)
         acc = int(torch.all(out.argmax(dim=-1) == target, dim=-1).to(torch.int).sum()) / out.shape[0]
