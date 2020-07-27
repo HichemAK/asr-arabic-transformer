@@ -117,7 +117,7 @@ def prepare_dataset(df, normalize=False, mean_std=None, id2label=None, max_lengt
     return to_return
 
 
-def get_batch(X, y, batch_size):
+def get_batch_basic(X, y, batch_size):
     # X : (batch_size, seq_length, d) dtype : float
     # y : (batch_size, seq_length) dtype : int
     count = 0
@@ -268,6 +268,8 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
                     dict_weights[c] += 1
                 dict_weights['<START>'] += 1
                 dict_weights['<END>'] += max_length_text - len(text) + 1
+
+    input_size = df.data.iloc[0].shape[-1]
     dict_weights = {label2id[k]: v for k, v in dict_weights.items()}
     weights = np.array([dict_weights[i] for i in range(len(dict_weights))])
     weights = np.sum(weights) / weights
@@ -276,7 +278,7 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
 
     store.close()
     id2label = {v: k for k, v in label2id.items()}
-    return id2label, max_length_text, max_length_data, mean, std, weights
+    return id2label, max_length_text, max_length_data, mean, std, weights, input_size
 
 
 def mean_std(hdf_filepath):
@@ -318,8 +320,11 @@ def get_id2label_hdf(hdf_filepath):
     return id2label, max_length_text
 
 
-def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, remove_sil=False):
-    id2label, max_length_text, max_length_data, mean, std, weights = get_all_infos_hdf(hdf_filepath)
+def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, remove_sil=False, infos=None):
+    if infos is None:
+        id2label, max_length_text, max_length_data, mean, std, weights, input_size = get_all_infos_hdf(hdf_filepath)
+    else:
+        id2label, max_length_text, max_length_data, mean, std, weights, input_size = infos
     store_prepared = pd.HDFStore(hdf_prepared_filepath, 'w')
     store = pd.HDFStore(hdf_filepath)
     for i in range(len(store.keys())):
@@ -330,7 +335,6 @@ def prepare_dataset_hdf(hdf_filepath, hdf_prepared_filepath, normalize=True, rem
         df = res['df']
         store_prepared['chunk' + str(i)] = df
 
-    input_size = df.data.iloc[0].shape[-1]
     store_prepared.close()
     store.close()
     infos = {'id2label': id2label, 'max_length_text': max_length_text, 'max_length_data': max_length_data,
@@ -366,3 +370,26 @@ def prepare_audio_mfcc(audio_path):
     y = librosa.feature.melspectrogram(audio, sr, n_mels=7, fmax=8000, n_fft=200, hop_length=80)
     y = librosa.power_to_db(y)
     return y
+
+
+def create_get_batch(preprocess_function):
+    def get_batch(store, batch_size):
+        batch = None
+        keys = store.keys()
+        random.shuffle(keys)
+        for k in range(len(keys)):
+            df = store[keys[k]]
+            df.drop(df[df.data_padding == 0].index, inplace=True)
+            i = 0
+            while i < len(df):
+                if batch is None:
+                    batch = df.iloc[i:i + batch_size]
+                    i += min(len(df) - i, batch_size)
+                else:
+                    i += min(len(df) - i, batch_size - len(batch))
+                    batch: pd.DataFrame = batch.append(df.iloc[i:i + batch_size - len(batch)])
+                if len(batch) == batch_size or (k == len(keys) - 1 and i >= len(df)):
+                    yield preprocess_function(batch)
+                    batch = None
+
+    return get_batch

@@ -85,7 +85,9 @@ class TrainerHDF:
                 infos = {"valid_loss": valid_loss, "train_loss": loss,
                          "train_loss_history": train_loss_history,
                          "valid_loss_history": valid_loss_history,
-                         "state_dict": self.best_model.state_dict()}
+                         "valid_accuracy" : accuracy,
+                         "state_dict": self.best_model.state_dict(),
+                         'config' : self.best_model.config}
                 torch.save(infos, path.join(path_save, save_name.format(1)))
 
                 epochs_without_improving = 0
