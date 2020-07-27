@@ -147,10 +147,12 @@ def evaluate(model, test_hdf_file, get_batch, loss_function, batch_size, cuda=Fa
     accuracy = 0
     count = 0
     model.eval()
+    if cuda:
+        model = model.cuda()
     test_gen = get_batch(store_test, batch_size)
     for x, target, src_padding, target_padding in test_gen:
         if cuda:
-            x = x.cuda()
+            x, target = x.cuda(), target.cuda()
         out = model(x)
         loss = loss_function(out, target)
         acc = int(torch.all(out.argmax(dim=-1) == target, dim=-1).to(torch.int).sum()) / out.shape[0]
