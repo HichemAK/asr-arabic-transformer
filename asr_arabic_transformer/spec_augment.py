@@ -1,7 +1,8 @@
 import random
 
 import torch
-from SpecAugment.sparse_image_warp_pytorch import sparse_image_warp
+
+from asr_arabic_transformer.nb_SparseImageWarp import sparse_image_warp
 
 
 def time_warp(spec, W=5):
