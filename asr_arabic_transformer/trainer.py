@@ -43,7 +43,7 @@ class Trainer:
             self.model.train()
             for x, target in train_gen:
                 loss += self.fit_batch(x, target)
-                train_loss_history.append(loss)
+                train_loss_history.append(loss / count)
                 count += 1
                 if count % print_every == 0:
                     print("Iteration :", len(train_loss_history), "Loss :", loss / count)
@@ -54,7 +54,7 @@ class Trainer:
             self.model.eval()
             for x, target in valid_gen:
                 valid_loss += self.eval_batch(x, target)
-                valid_loss_history += [valid_loss] * (len(valid_loss_history) - len(train_loss_history))
+                valid_loss_history += [valid_loss/count] * (len(valid_loss_history) - len(train_loss_history))
                 count += 1
             valid_loss /= count
             print("Training Loss   :", loss)
