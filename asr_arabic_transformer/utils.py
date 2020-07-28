@@ -269,7 +269,7 @@ def get_all_infos_hdf(hdf_filepath, text_to_avoid=None):
                 dict_weights['<START>'] += 1
                 dict_weights['<END>'] += max_length_text - len(text) + 1
 
-    input_size = df.data.iloc[0].shape[-1]
+    input_size = df.data.iloc[0].shape[-2]
     dict_weights = {label2id[k]: v for k, v in dict_weights.items()}
     weights = np.array([dict_weights[i] for i in range(len(dict_weights))])
     weights = np.sum(weights) / weights
