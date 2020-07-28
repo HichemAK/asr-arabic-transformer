@@ -43,11 +43,11 @@ class TrainerHDF:
 
         for i in range(max_epochs):
             if isinstance(self.get_batch, tuple):
-                train_gen = self.get_batch[0](self.X_train, self.y_train, batch_size)
-                valid_gen = self.get_batch[1](self.X_valid, self.y_valid, batch_size)
+                train_gen = self.get_batch[0](store_train, batch_size)
+                valid_gen = self.get_batch[1](store_dev, batch_size)
             else:
-                train_gen = self.get_batch(self.X_train, self.y_train, batch_size)
-                valid_gen = self.get_batch(self.X_valid, self.y_valid, batch_size)
+                train_gen = self.get_batch(store_train, batch_size)
+                valid_gen = self.get_batch(store_dev, batch_size)
             print("Epoch", i)
             loss = 0
             count = 0
