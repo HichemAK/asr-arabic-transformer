@@ -35,8 +35,12 @@ class Trainer:
 
         for i in range(max_epochs):
             self.X_train, self.y_train = shuffle_jointly(self.X_train, self.y_train)
-            train_gen = self.get_batch(self.X_train, self.y_train, batch_size)
-            valid_gen = self.get_batch(self.X_valid, self.y_valid, batch_size)
+            if isinstance(self.get_batch, tuple):
+                train_gen = self.get_batch[0](self.X_train, self.y_train, batch_size)
+                valid_gen = self.get_batch[1](self.X_valid, self.y_valid, batch_size)
+            else:
+                train_gen = self.get_batch(self.X_train, self.y_train, batch_size)
+                valid_gen = self.get_batch(self.X_valid, self.y_valid, batch_size)
             print("Epoch", i)
             loss = 0
             count = 0

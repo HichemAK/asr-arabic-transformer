@@ -372,7 +372,7 @@ def prepare_audio_mfcc(audio_path):
     return y
 
 
-def create_get_batch(preprocess_function):
+def create_get_batch(preprocess_function, **kwargs):
     def get_batch(store, batch_size):
         batch = None
         keys = store.keys()
@@ -389,7 +389,7 @@ def create_get_batch(preprocess_function):
                     i += min(len(df) - i, batch_size - len(batch))
                     batch: pd.DataFrame = batch.append(df.iloc[i:i + batch_size - len(batch)])
                 if len(batch) == batch_size or (k == len(keys) - 1 and i >= len(df)):
-                    yield preprocess_function(batch)
+                    yield preprocess_function(batch, **kwargs)
                     batch = None
 
     return get_batch
