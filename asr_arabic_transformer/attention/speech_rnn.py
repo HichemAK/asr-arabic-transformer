@@ -18,6 +18,10 @@ class SpeechRNN(nn.Module):
         self.n_classes = n_classes
         self.Ty = Ty
 
+        self.cnn = None
+        if use_cnn:
+            self.cnn = CNN()
+
         if use_cnn:
             _, output_cnn = conv_output_shape((100, input_size), kernel_size=3, stride=2)
             _, output_cnn = conv_output_shape((100, output_cnn), kernel_size=3, stride=2)
@@ -32,8 +36,6 @@ class SpeechRNN(nn.Module):
         del config['n_classes']
         self.attention_rnn = Attention_RNN(**config)
         self.use_cnn = use_cnn
-        if use_cnn:
-            self.cnn = CNN()
 
     def forward(self, x):
         x = self._handle_cnn(x)
