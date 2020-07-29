@@ -5,7 +5,7 @@ import torch
 from asr_arabic_transformer.nb_SparseImageWarp import sparse_image_warp
 
 
-def time_warp(spec, W=5):
+def time_warp(spec, W=3):
     num_rows = spec.shape[1]
     spec_len = spec.shape[2]
     device = spec.device
@@ -64,5 +64,5 @@ def freq_mask(spec, F=30, num_masks=1, replace_with_zero=False):
 
     return cloned
 
-def spec_augment(spec):
-    return time_mask(freq_mask(time_warp(spec), num_masks=2), num_masks=2)
+def spec_augment(spec, W, F, T, f_num_mask, t_num_mask):
+    return time_mask(freq_mask(time_warp(spec, W), F=F, num_masks=f_num_mask), T=T, num_masks=t_num_mask)
