@@ -34,6 +34,7 @@ class SpeechRNN(nn.Module):
         config['num_alphabet'] = config['n_classes']
         config['input_size'] = output_cnn
         del config['n_classes']
+        del config['use_cnn']
         self.attention_rnn = Attention_RNN(**config)
         self.use_cnn = use_cnn
 
