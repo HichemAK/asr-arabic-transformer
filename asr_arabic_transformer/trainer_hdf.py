@@ -57,7 +57,7 @@ class TrainerHDF:
                 tl, acc = self.fit_batch(x, target, src_padding, target_padding)
                 loss += tl
                 accuracy += acc
-                train_loss_history.append(loss)
+                train_loss_history.append(loss/count)
                 count += 1
                 if count % print_every == 0:
                     print("Iteration :", len(train_loss_history), "Loss :", loss / count, "   Accuracy :",
@@ -74,7 +74,7 @@ class TrainerHDF:
                 vl, acc = self.eval_batch(x, target, src_padding, target_padding)
                 valid_loss += vl
                 accuracy += acc
-                valid_loss_history += [valid_loss] * (len(valid_loss_history) - len(train_loss_history))
+                valid_loss_history += [valid_loss/count] * (len(valid_loss_history) - len(train_loss_history))
                 count += 1
             valid_loss /= count
             accuracy /= count
